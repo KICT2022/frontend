@@ -103,6 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 },
               ),
+              const SizedBox(width: 4),
               IconButton(
                 icon: const Icon(Icons.settings, color: Color(0xFF174D4D)),
                 onPressed: () => context.go('/settings'),
