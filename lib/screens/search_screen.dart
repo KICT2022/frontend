@@ -23,6 +23,118 @@ class _SearchScreenState extends State<SearchScreen> {
   ];
   // 약물 입력 칸 개수를 관리하는 변수 추가
   int _drugInputCount = 2;
+  // 약물 입력 칸들의 TextEditingController 리스트
+  List<TextEditingController> _drugControllers = [];
+  // 입력 검증 메시지
+  String? _validationMessage;
+  // 증상 입력 필드 컨트롤러
+  TextEditingController _symptomInputController = TextEditingController();
+  // 증상 카드 데이터
+  final List<Map<String, dynamic>> _symptomCards = [
+    {'title': '두통', 'icon': Icons.headset, 'symptom': '머리가 아파요'},
+    {'title': '인후통', 'icon': Icons.record_voice_over, 'symptom': '목이 아파요'},
+    {'title': '요통', 'icon': Icons.accessibility, 'symptom': '허리가 아파요'},
+    {'title': '흉통', 'icon': Icons.favorite, 'symptom': '심장이 아파요'},
+    {'title': '복통', 'icon': Icons.person, 'symptom': '배가 아파요'},
+    {'title': '관절통', 'icon': Icons.accessibility_new, 'symptom': '관절이 아파요'},
+    {'title': '치통', 'icon': Icons.face, 'symptom': '이가 아파요'},
+    {'title': '귀앓이', 'icon': Icons.hearing, 'symptom': '귀가 아파요'},
+    {'title': '어깨통증', 'icon': Icons.accessibility, 'symptom': '어깨가 아파요'},
+    {'title': '무릎통증', 'icon': Icons.directions_walk, 'symptom': '무릎이 아파요'},
+    {'title': '손목통증', 'icon': Icons.pan_tool, 'symptom': '손목이 아파요'},
+    {'title': '발목통증', 'icon': Icons.directions_run, 'symptom': '발목이 아파요'},
+  ];
+  // 페이지 컨트롤러
+  late PageController _pageController;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeControllers();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    for (var controller in _drugControllers) {
+      controller.dispose();
+    }
+    _symptomInputController.dispose();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _initializeControllers() {
+    // 기존 컨트롤러들 정리
+    for (var controller in _drugControllers) {
+      controller.dispose();
+    }
+    _drugControllers.clear();
+
+    // 새로운 컨트롤러들 생성
+    for (int i = 0; i < _drugInputCount; i++) {
+      _drugControllers.add(TextEditingController());
+    }
+  }
+
+  void _addController() {
+    // 새로운 컨트롤러만 추가
+    _drugControllers.add(TextEditingController());
+  }
+
+  void _removeController(int index) {
+    if (index < _drugControllers.length) {
+      _drugControllers[index].dispose();
+      _drugControllers.removeAt(index);
+    }
+  }
+
+  bool _validateDrugInputs() {
+    // 모든 입력 칸이 채워져 있는지 확인
+    for (int i = 0; i < _drugControllers.length; i++) {
+      if (_drugControllers[i].text.trim().isEmpty) {
+        setState(() {
+          _validationMessage = '${i + 1}번째 약을 먼저 입력해주세요.';
+        });
+        return false;
+      }
+    }
+
+    setState(() {
+      _validationMessage = null;
+    });
+    return true;
+  }
+
+  void _addNewDrugInput() {
+    if (_validateDrugInputs()) {
+      setState(() {
+        _drugInputCount++;
+        _addController();
+      });
+    }
+  }
+
+  void _addSymptomFromInput() {
+    final symptom = _symptomInputController.text.trim();
+    if (symptom.isNotEmpty) {
+      final medicationProvider = Provider.of<MedicationProvider>(
+        context,
+        listen: false,
+      );
+      medicationProvider.addSymptom(symptom);
+      _symptomInputController.clear();
+    }
+  }
+
+  List<List<Map<String, dynamic>>> _getSymptomPages() {
+    List<List<Map<String, dynamic>>> pages = [];
+    for (int i = 0; i < _symptomCards.length; i += 6) {
+      pages.add(_symptomCards.skip(i).take(6).toList());
+    }
+    return pages;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,6 +217,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     onTap: () {
                       setState(() {
                         _isSymptomInput = true;
+                        _currentPage = 0;
                       });
                     },
                     child: Container(
@@ -146,6 +259,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     onTap: () {
                       setState(() {
                         _isSymptomInput = false;
+                        _currentPage = 0;
                       });
                     },
                     child: Container(
@@ -222,6 +336,17 @@ class _SearchScreenState extends State<SearchScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 증상 직접 입력 섹션
+            Text(
+              '증상 직접 입력',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF174D4D),
+              ),
+            ),
+            const SizedBox(height: 16),
+
             // 증상 검색 입력 필드
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -231,16 +356,31 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.search, color: Colors.grey.shade600),
-                  const SizedBox(width: 12),
                   Expanded(
                     child: TextField(
+                      controller: _symptomInputController,
                       decoration: const InputDecoration(
                         hintText: '증상을 입력해주세요',
                         border: InputBorder.none,
                         hintStyle: TextStyle(color: Colors.grey),
                       ),
+                      onSubmitted: (value) {
+                        _addSymptomFromInput();
+                      },
                     ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: _addSymptomFromInput,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green.shade600,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.all(8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Icon(Icons.add, size: 18),
                   ),
                 ],
               ),
@@ -259,23 +399,84 @@ class _SearchScreenState extends State<SearchScreen> {
             const SizedBox(height: 16),
 
             // 증상 아이콘 그리드
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 1.5,
+            Column(
               children: [
-                _buildSymptomCard('두통', Icons.headset, '머리가 아파요'),
-                _buildSymptomCard('인후통', Icons.record_voice_over, '목이 아파요'),
-                _buildSymptomCard('요통', Icons.accessibility, '허리가 아파요'),
-                _buildSymptomCard('흉통', Icons.favorite, '심장이 아파요'),
-                _buildSymptomCard('복통', Icons.person, '눈이 아파요'),
+                SizedBox(
+                  height: 280,
+                  child: PageView.builder(
+                    controller: _pageController,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentPage = index;
+                      });
+                    },
+                    itemCount: _getSymptomPages().length,
+                    itemBuilder: (context, pageIndex) {
+                      final pageSymptoms = _getSymptomPages()[pageIndex];
+                      return GridView.count(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
+                        childAspectRatio: 1.0,
+                        children:
+                            pageSymptoms.map((symptom) {
+                              return _buildSymptomCard(
+                                symptom['title'],
+                                symptom['icon'],
+                                symptom['symptom'],
+                              );
+                            }).toList(),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 4),
+                // 페이지 인디케이터
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (_currentPage > 0)
+                      IconButton(
+                        onPressed: () {
+                          _pageController.previousPage(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        },
+                        icon: const Icon(Icons.arrow_back_ios, size: 20),
+                      ),
+                    ...List.generate(_getSymptomPages().length, (index) {
+                      return Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color:
+                              _currentPage == index
+                                  ? Colors.green.shade600
+                                  : Colors.grey.shade300,
+                        ),
+                      );
+                    }),
+                    if (_currentPage < _getSymptomPages().length - 1)
+                      IconButton(
+                        onPressed: () {
+                          _pageController.nextPage(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        },
+                        icon: const Icon(Icons.arrow_forward_ios, size: 20),
+                      ),
+                  ],
+                ),
               ],
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 16),
 
             // 지금 내 증상은 섹션
             Text(
@@ -404,6 +605,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         GestureDetector(
                           onTap: () {
                             setState(() {
+                              _removeController(index);
                               _drugInputCount--;
                             });
                           },
@@ -433,10 +635,22 @@ class _SearchScreenState extends State<SearchScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: TextField(
+                            controller:
+                                index < _drugControllers.length
+                                    ? _drugControllers[index]
+                                    : null,
                             decoration: InputDecoration(
                               hintText: '${index + 1}번째 약 입력',
                               border: InputBorder.none,
                             ),
+                            onChanged: (value) {
+                              // 입력이 변경되면 검증 메시지 제거
+                              if (_validationMessage != null) {
+                                setState(() {
+                                  _validationMessage = null;
+                                });
+                              }
+                            },
                           ),
                         ),
                       ),
@@ -454,15 +668,32 @@ class _SearchScreenState extends State<SearchScreen> {
             }),
             const SizedBox(height: 20),
 
+            // 검증 메시지 표시 (추가하기 버튼 위)
+            if (_validationMessage != null)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  border: Border.all(color: Colors.red.shade200),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  _validationMessage!,
+                  style: TextStyle(
+                    color: Colors.red.shade700,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+
             // 추가하기 버튼
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    _drugInputCount++;
-                  });
-                },
+                onPressed: _addNewDrugInput,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
