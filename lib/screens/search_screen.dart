@@ -22,6 +22,8 @@ class _SearchScreenState extends State<SearchScreen> {
     '목이 아파요',
     '눈이 아파요',
   ];
+  // 약물 입력 칸 개수를 관리하는 변수 추가
+  int _drugInputCount = 2;
 
   @override
   void dispose() {
@@ -338,60 +340,75 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildDrugInteraction() {
     return Column(
       children: [
-        // 첫 번째 약 입력
-        Row(
-          children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const TextField(
-                  decoration: InputDecoration(
-                    hintText: '첫 번째 약 입력',
-                    border: InputBorder.none,
+        // 동적으로 생성되는 약물 입력 칸들
+        ...List.generate(_drugInputCount, (index) {
+          return Column(
+            children: [
+              Row(
+                children: [
+                  // 삭제 버튼 공간 (1, 2번째는 빈 공간, 3번째부터는 삭제 버튼)
+                  if (index >= 2) ...[
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _drugInputCount--;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    // 1, 2번째 약 입력칸을 위한 빈 공간
+                    Container(width: 24, height: 24),
+                  ],
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: '${index + 1}번째 약 입력',
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.camera_alt),
+                ],
               ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(Icons.camera_alt),
-          ],
-        ),
-        const SizedBox(height: 20),
-        // 플러스 아이콘
-        const Icon(Icons.add, size: 32, color: Colors.blue),
-        const SizedBox(height: 20),
-        // 두 번째 약 입력
-        Row(
-          children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const TextField(
-                  decoration: InputDecoration(
-                    hintText: '두 번째 약 입력',
-                    border: InputBorder.none,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(Icons.camera_alt),
-          ],
-        ),
+              if (index < _drugInputCount - 1) ...[
+                const SizedBox(height: 20),
+                const Icon(Icons.add, size: 32, color: Colors.blue),
+                const SizedBox(height: 20),
+              ],
+            ],
+          );
+        }),
         const SizedBox(height: 20),
         // 추가하기 버튼
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              setState(() {
+                _drugInputCount++;
+              });
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
