@@ -15,130 +15,164 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF6F8FA),
       appBar: AppBar(
-        title: const Text('프로필'),
+        title: const Text(
+          '프로필',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+            color: Color(0xFF174D4D),
+            letterSpacing: 1.2,
+          ),
+        ),
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
+        elevation: 2,
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings),
+            icon: const Icon(Icons.settings, color: Color(0xFF174D4D)),
             onPressed: () {
               context.go('/settings');
             },
           ),
         ],
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+        ),
       ),
-      body: SafeArea(
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
         child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Consumer<AuthProvider>(
-              builder: (context, authProvider, child) {
-                final user = authProvider.currentUser;
-                if (user == null) return const SizedBox.shrink();
-
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 헤더
-                    Row(
-                      children: [
-                        const Icon(Icons.medication, size: 24),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${user.name} 님',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+          child: Consumer<AuthProvider>(
+            builder: (context, authProvider, child) {
+              final user = authProvider.currentUser;
+              if (user == null) return const SizedBox.shrink();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    elevation: 8,
+                    color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.medication,
+                            size: 40,
+                            color: Color(0xFF174D4D),
                           ),
-                        ),
-                        const Spacer(),
-                        // 기존 IconButton(설정) 삭제
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-
-                    // 정보 수정 버튼
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text('정보 수정'),
+                          const SizedBox(width: 20),
+                          Text(
+                            '${user.name} 님',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF174D4D),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 20),
-
-                    // 사용자 정보
-                    _buildInfoSection('성별', user.gender),
-                    _buildInfoSection(
-                      '나이',
-                      '${DateTime.now().year - user.birthDate.year}세',
+                  ),
+                  const SizedBox(height: 24),
+                  Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
                     ),
-
-                    // 병력
-                    _buildMultiSelectSection('병력', user.medicalHistory, [
-                      '위염',
-                      '편도염',
-                    ]),
-
-                    // 복용중인 약
-                    _buildMultiSelectSection(
-                      '복용중인 약',
-                      user.currentMedications,
-                      ['A약', 'B약'],
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // 내 주변 약국
-                    const Text(
-                      '내 주변 약국',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                    elevation: 8,
+                    color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildInfoSection('성별', user.gender),
+                          _buildInfoSection(
+                            '나이',
+                            '${DateTime.now().year - user.birthDate.year}세',
+                          ),
+                          _buildMultiSelectSection('병력', user.medicalHistory, [
+                            '위염',
+                            '편도염',
+                          ]),
+                          _buildMultiSelectSection(
+                            '복용중인 약',
+                            user.currentMedications,
+                            ['A약', 'B약'],
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(Icons.home, size: 16),
-                        const SizedBox(width: 4),
-                        const Text('우리집'),
-                      ],
+                  ),
+                  const SizedBox(height: 24),
+                  Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    if (user.address != null) ...[
-                      const SizedBox(height: 4),
-                      Text(user.address!),
-                    ],
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {},
-                        icon: const Icon(Icons.my_location),
-                        label: const Text('현재 위치를 찾기'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                        ),
+                    elevation: 8,
+                    color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '내 주변 약국',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF174D4D),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.home,
+                                size: 16,
+                                color: Color(0xFF174D4D),
+                              ),
+                              const SizedBox(width: 4),
+                              const Text('우리집'),
+                            ],
+                          ),
+                          if (user.address != null) ...[
+                            const SizedBox(height: 4),
+                            Text(user.address!),
+                          ],
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () {},
+                              icon: const Icon(Icons.my_location),
+                              label: const Text('현재 위치를 찾기'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Color(0xFF174D4D),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 20),
-
-                    // 보호자 등록
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                  ),
+                  const SizedBox(height: 24),
+                  Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    elevation: 8,
+                    color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -147,6 +181,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
+                              color: Color(0xFF174D4D),
                             ),
                           ),
                           if (user.guardian != null) ...[
@@ -155,26 +190,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Text('관계: ${user.guardian!.relationship}'),
                             Text('전화번호: ${user.guardian!.phoneNumber}'),
                           ],
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () {},
+                              icon: const Icon(Icons.camera_alt),
+                              label: const Text('보호자 추가'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Color(0xFF174D4D),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {},
-                        icon: const Icon(Icons.camera_alt),
-                        label: const Text('보호자 추가'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -192,7 +230,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               context.go('/medication');
               break;
             case 3:
-              // 이미 프로필 화면
+              // 이미 프로필 화면이므로 아무것도 하지 않음
               break;
           }
         },
