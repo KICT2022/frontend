@@ -27,6 +27,8 @@ class _SearchScreenState extends State<SearchScreen> {
   List<TextEditingController> _drugControllers = [];
   // 입력 검증 메시지
   String? _validationMessage;
+  // 증상 입력 필드 컨트롤러
+  TextEditingController _symptomInputController = TextEditingController();
 
   @override
   void initState() {
@@ -39,6 +41,7 @@ class _SearchScreenState extends State<SearchScreen> {
     for (var controller in _drugControllers) {
       controller.dispose();
     }
+    _symptomInputController.dispose();
     super.dispose();
   }
 
@@ -90,6 +93,18 @@ class _SearchScreenState extends State<SearchScreen> {
         _drugInputCount++;
         _addController();
       });
+    }
+  }
+
+  void _addSymptomFromInput() {
+    final symptom = _symptomInputController.text.trim();
+    if (symptom.isNotEmpty) {
+      final medicationProvider = Provider.of<MedicationProvider>(
+        context,
+        listen: false,
+      );
+      medicationProvider.addSymptom(symptom);
+      _symptomInputController.clear();
     }
   }
 
@@ -300,16 +315,31 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.search, color: Colors.grey.shade600),
-                  const SizedBox(width: 12),
                   Expanded(
                     child: TextField(
+                      controller: _symptomInputController,
                       decoration: const InputDecoration(
                         hintText: '증상을 입력해주세요',
                         border: InputBorder.none,
                         hintStyle: TextStyle(color: Colors.grey),
                       ),
+                      onSubmitted: (value) {
+                        _addSymptomFromInput();
+                      },
                     ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: _addSymptomFromInput,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green.shade600,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.all(8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Icon(Icons.add, size: 18),
                   ),
                 ],
               ),
