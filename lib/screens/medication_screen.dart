@@ -329,18 +329,31 @@ class _MedicationScreenState extends State<MedicationScreen> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(reminder['text']),
+          Expanded(
+            child: Text(
+              reminder['text'],
+              style: TextStyle(fontSize: 14, height: 1.3),
+              softWrap: true,
+              overflow: TextOverflow.visible,
+            ),
+          ),
+          const SizedBox(width: 8),
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
-                icon: const Icon(Icons.edit, color: Colors.blue),
+                icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
                 onPressed: () => _showAddReminderDialog(reminder),
+                padding: EdgeInsets.zero,
+                constraints: BoxConstraints(minWidth: 32, minHeight: 32),
               ),
               IconButton(
-                icon: const Icon(Icons.delete, color: Colors.red),
+                icon: const Icon(Icons.delete, color: Colors.red, size: 20),
                 onPressed: () => _deleteReminder(reminder['id']),
+                padding: EdgeInsets.zero,
+                constraints: BoxConstraints(minWidth: 32, minHeight: 32),
               ),
             ],
           ),
@@ -353,18 +366,24 @@ class _MedicationScreenState extends State<MedicationScreen> {
   void _showAddReminderDialog([Map<String, dynamic>? existingReminder]) {
     bool isEditing = existingReminder != null;
     String medicationName = '';
-    TimeOfDay selectedTime = TimeOfDay.now();
+    List<TimeOfDay> selectedTimes = [TimeOfDay.now()];
     List<String> selectedDays = [];
+    String medicationNote = ''; // 약 복용 특이사항
 
     // 수정 모드일 때 기존 데이터 설정
     if (isEditing) {
       final textParts = existingReminder!['text'].split(' • ');
-      // "C약 • 매일 • 14:00" 형태에서 첫 번째 부분이 약 이름
+      // "C약 • 매일 • 14:00 • 식후 30분" 형태에서 파싱
       if (textParts.isNotEmpty && textParts[0].contains('약')) {
         medicationName = textParts[0];
       }
-      selectedTime = _parseTimeFromText(existingReminder['text']);
+      // 기존 시간들을 파싱하여 selectedTimes에 추가
+      selectedTimes = _parseTimesFromText(existingReminder['text']);
       selectedDays = List<String>.from(existingReminder['days']);
+      // 특이사항 파싱 (마지막 부분이 특이사항일 가능성이 높음)
+      if (textParts.length > 3) {
+        medicationNote = textParts[3];
+      }
     }
 
     showDialog(
@@ -400,170 +419,351 @@ class _MedicationScreenState extends State<MedicationScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // 시간 선택
+                    // 약 복용 특이사항 선택
                     Text(
-                      '시간 선택',
+                      '복용 시점',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _buildNoteChip('식전 30분', medicationNote, (selected) {
+                          setState(() {
+                            if (selected) {
+                              medicationNote = '식전 30분';
+                            } else {
+                              medicationNote = '';
+                            }
+                          });
+                        }),
+                        _buildNoteChip('식후 30분', medicationNote, (selected) {
+                          setState(() {
+                            if (selected) {
+                              medicationNote = '식후 30분';
+                            } else {
+                              medicationNote = '';
+                            }
+                          });
+                        }),
+                        _buildNoteChip('기상 후 30분', medicationNote, (selected) {
+                          setState(() {
+                            if (selected) {
+                              medicationNote = '기상 후 30분';
+                            } else {
+                              medicationNote = '';
+                            }
+                          });
+                        }),
+                        _buildNoteChip('취침 전', medicationNote, (selected) {
+                          setState(() {
+                            if (selected) {
+                              medicationNote = '취침 전';
+                            } else {
+                              medicationNote = '';
+                            }
+                          });
+                        }),
+                        _buildNoteChip('공복 시', medicationNote, (selected) {
+                          setState(() {
+                            if (selected) {
+                              medicationNote = '공복 시';
+                            } else {
+                              medicationNote = '';
+                            }
+                          });
+                        }),
+                        _buildNoteChip('즉시 복용', medicationNote, (selected) {
+                          setState(() {
+                            if (selected) {
+                              medicationNote = '즉시 복용';
+                            } else {
+                              medicationNote = '';
+                            }
+                          });
+                        }),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    // 직접 입력 필드
                     Row(
                       children: [
-                        // 시간 선택
                         Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
+                          child: TextField(
+                            controller: TextEditingController(
+                              text:
+                                  medicationNote.isNotEmpty &&
+                                          ![
+                                            '식전 30분',
+                                            '식후 30분',
+                                            '기상 후 30분',
+                                            '취침 전',
+                                            '공복 시',
+                                            '즉시 복용',
+                                          ].contains(medicationNote)
+                                      ? medicationNote
+                                      : '',
                             ),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade300),
-                              borderRadius: BorderRadius.circular(8),
+                            decoration: InputDecoration(
+                              labelText: '직접 입력',
+                              hintText: '예: 식후 1시간, 기상 직후',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  '${selectedTime.hour.toString().padLeft(2, '0')}',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                Column(
-                                  children: [
-                                    IconButton(
-                                      icon: Icon(
-                                        Icons.keyboard_arrow_up,
-                                        size: 20,
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          int newHour = selectedTime.hour + 1;
-                                          if (newHour > 23) newHour = 0;
-                                          selectedTime = TimeOfDay(
-                                            hour: newHour,
-                                            minute: selectedTime.minute,
-                                          );
-                                        });
-                                      },
-                                      padding: EdgeInsets.zero,
-                                      constraints: BoxConstraints(
-                                        minWidth: 30,
-                                        minHeight: 30,
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: Icon(
-                                        Icons.keyboard_arrow_down,
-                                        size: 20,
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          int newHour = selectedTime.hour - 1;
-                                          if (newHour < 0) newHour = 23;
-                                          selectedTime = TimeOfDay(
-                                            hour: newHour,
-                                            minute: selectedTime.minute,
-                                          );
-                                        });
-                                      },
-                                      padding: EdgeInsets.zero,
-                                      constraints: BoxConstraints(
-                                        minWidth: 30,
-                                        minHeight: 30,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                            onChanged: (value) {
+                              medicationNote = value;
+                            },
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Text(
-                            ':',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        // 분 선택
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade300),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              medicationNote = '';
+                            });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey.shade300,
+                            foregroundColor: Colors.black87,
+                            shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  '${selectedTime.minute.toString().padLeft(2, '0')}',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                Column(
-                                  children: [
-                                    IconButton(
-                                      icon: Icon(
-                                        Icons.keyboard_arrow_up,
-                                        size: 20,
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          int newMinute =
-                                              selectedTime.minute + 5;
-                                          if (newMinute >= 60) newMinute = 0;
-                                          selectedTime = TimeOfDay(
-                                            hour: selectedTime.hour,
-                                            minute: newMinute,
-                                          );
-                                        });
-                                      },
-                                      padding: EdgeInsets.zero,
-                                      constraints: BoxConstraints(
-                                        minWidth: 30,
-                                        minHeight: 30,
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: Icon(
-                                        Icons.keyboard_arrow_down,
-                                        size: 20,
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          int newMinute =
-                                              selectedTime.minute - 5;
-                                          if (newMinute < 0) newMinute = 55;
-                                          selectedTime = TimeOfDay(
-                                            hour: selectedTime.hour,
-                                            minute: newMinute,
-                                          );
-                                        });
-                                      },
-                                      padding: EdgeInsets.zero,
-                                      constraints: BoxConstraints(
-                                        minWidth: 30,
-                                        minHeight: 30,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                          ),
+                          child: Text('초기화'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 시간 선택
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '시간 선택',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        TextButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              selectedTimes.add(TimeOfDay.now());
+                            });
+                          },
+                          icon: Icon(Icons.add, size: 16),
+                          label: Text('시간 추가'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Color(0xFF174D4D),
                           ),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 8),
+                    // 선택된 시간들 표시
+                    ...selectedTimes.asMap().entries.map((entry) {
+                      int index = entry.key;
+                      TimeOfDay time = entry.value;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  // 시간 선택
+                                  Expanded(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: Colors.grey.shade300,
+                                        ),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            '${time.hour.toString().padLeft(2, '0')}',
+                                            style: TextStyle(fontSize: 14),
+                                          ),
+                                          Column(
+                                            children: [
+                                              IconButton(
+                                                icon: Icon(
+                                                  Icons.keyboard_arrow_up,
+                                                  size: 16,
+                                                ),
+                                                onPressed: () {
+                                                  setState(() {
+                                                    int newHour = time.hour + 1;
+                                                    if (newHour > 23)
+                                                      newHour = 0;
+                                                    selectedTimes[index] =
+                                                        TimeOfDay(
+                                                          hour: newHour,
+                                                          minute: time.minute,
+                                                        );
+                                                  });
+                                                },
+                                                padding: EdgeInsets.zero,
+                                                constraints: BoxConstraints(
+                                                  minWidth: 24,
+                                                  minHeight: 24,
+                                                ),
+                                              ),
+                                              IconButton(
+                                                icon: Icon(
+                                                  Icons.keyboard_arrow_down,
+                                                  size: 16,
+                                                ),
+                                                onPressed: () {
+                                                  setState(() {
+                                                    int newHour = time.hour - 1;
+                                                    if (newHour < 0)
+                                                      newHour = 23;
+                                                    selectedTimes[index] =
+                                                        TimeOfDay(
+                                                          hour: newHour,
+                                                          minute: time.minute,
+                                                        );
+                                                  });
+                                                },
+                                                padding: EdgeInsets.zero,
+                                                constraints: BoxConstraints(
+                                                  minWidth: 24,
+                                                  minHeight: 24,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                    ),
+                                    child: Text(
+                                      ':',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  // 분 선택
+                                  Expanded(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: Colors.grey.shade300,
+                                        ),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            '${time.minute.toString().padLeft(2, '0')}',
+                                            style: TextStyle(fontSize: 14),
+                                          ),
+                                          Column(
+                                            children: [
+                                              IconButton(
+                                                icon: Icon(
+                                                  Icons.keyboard_arrow_up,
+                                                  size: 16,
+                                                ),
+                                                onPressed: () {
+                                                  setState(() {
+                                                    int newMinute =
+                                                        time.minute + 5;
+                                                    if (newMinute >= 60)
+                                                      newMinute = 0;
+                                                    selectedTimes[index] =
+                                                        TimeOfDay(
+                                                          hour: time.hour,
+                                                          minute: newMinute,
+                                                        );
+                                                  });
+                                                },
+                                                padding: EdgeInsets.zero,
+                                                constraints: BoxConstraints(
+                                                  minWidth: 24,
+                                                  minHeight: 24,
+                                                ),
+                                              ),
+                                              IconButton(
+                                                icon: Icon(
+                                                  Icons.keyboard_arrow_down,
+                                                  size: 16,
+                                                ),
+                                                onPressed: () {
+                                                  setState(() {
+                                                    int newMinute =
+                                                        time.minute - 5;
+                                                    if (newMinute < 0)
+                                                      newMinute = 55;
+                                                    selectedTimes[index] =
+                                                        TimeOfDay(
+                                                          hour: time.hour,
+                                                          minute: newMinute,
+                                                        );
+                                                  });
+                                                },
+                                                padding: EdgeInsets.zero,
+                                                constraints: BoxConstraints(
+                                                  minWidth: 24,
+                                                  minHeight: 24,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (selectedTimes.length > 1)
+                              IconButton(
+                                icon: Icon(
+                                  Icons.remove_circle,
+                                  color: Colors.red,
+                                  size: 20,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    selectedTimes.removeAt(index);
+                                  });
+                                },
+                              ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
                     const SizedBox(height: 12),
                     // 빠른 시간 선택 버튼들
                     Wrap(
@@ -573,40 +773,60 @@ class _MedicationScreenState extends State<MedicationScreen> {
                         _buildQuickTimeButton(
                           '아침',
                           TimeOfDay(hour: 8, minute: 0),
-                          selectedTime,
+                          selectedTimes.isNotEmpty
+                              ? selectedTimes.last
+                              : TimeOfDay.now(),
                           () {
                             setState(() {
-                              selectedTime = TimeOfDay(hour: 8, minute: 0);
+                              if (selectedTimes.isNotEmpty) {
+                                selectedTimes[selectedTimes.length -
+                                    1] = TimeOfDay(hour: 8, minute: 0);
+                              }
                             });
                           },
                         ),
                         _buildQuickTimeButton(
                           '점심',
                           TimeOfDay(hour: 12, minute: 0),
-                          selectedTime,
+                          selectedTimes.isNotEmpty
+                              ? selectedTimes.last
+                              : TimeOfDay.now(),
                           () {
                             setState(() {
-                              selectedTime = TimeOfDay(hour: 12, minute: 0);
+                              if (selectedTimes.isNotEmpty) {
+                                selectedTimes[selectedTimes.length -
+                                    1] = TimeOfDay(hour: 12, minute: 0);
+                              }
                             });
                           },
                         ),
                         _buildQuickTimeButton(
                           '저녁',
                           TimeOfDay(hour: 18, minute: 0),
-                          selectedTime,
+                          selectedTimes.isNotEmpty
+                              ? selectedTimes.last
+                              : TimeOfDay.now(),
                           () {
                             setState(() {
-                              selectedTime = TimeOfDay(hour: 18, minute: 0);
+                              if (selectedTimes.isNotEmpty) {
+                                selectedTimes[selectedTimes.length -
+                                    1] = TimeOfDay(hour: 18, minute: 0);
+                              }
                             });
                           },
                         ),
                         _buildQuickTimeButton(
                           '취침',
                           TimeOfDay(hour: 22, minute: 0),
-                          selectedTime,
+                          selectedTimes.isNotEmpty
+                              ? selectedTimes.last
+                              : TimeOfDay.now(),
                           () {
                             setState(() {
-                              selectedTime = TimeOfDay(hour: 22, minute: 0);
+                              if (selectedTimes.isNotEmpty) {
+                                selectedTimes[selectedTimes.length -
+                                    1] = TimeOfDay(hour: 22, minute: 0);
+                              }
                             });
                           },
                         ),
@@ -687,26 +907,30 @@ class _MedicationScreenState extends State<MedicationScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    if (medicationName.isNotEmpty && selectedDays.isNotEmpty) {
+                    if (medicationName.isNotEmpty &&
+                        selectedDays.isNotEmpty &&
+                        selectedTimes.isNotEmpty) {
                       if (isEditing) {
                         _updateReminder(
                           existingReminder!['id'],
                           medicationName,
-                          selectedTime,
+                          selectedTimes,
                           selectedDays,
+                          medicationNote,
                         );
                       } else {
                         _addReminder(
                           medicationName,
-                          selectedTime,
+                          selectedTimes,
                           selectedDays,
+                          medicationNote,
                         );
                       }
                       Navigator.of(context).pop();
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('약 이름과 요일을 모두 입력해주세요.'),
+                          content: Text('약 이름, 요일, 시간을 모두 입력해주세요.'),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -727,15 +951,26 @@ class _MedicationScreenState extends State<MedicationScreen> {
   }
 
   // 새로운 알림을 추가하는 메서드
-  void _addReminder(String medicationName, TimeOfDay time, List<String> days) {
-    final timeString =
-        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  void _addReminder(
+    String medicationName,
+    List<TimeOfDay> times,
+    List<String> days,
+    String note,
+  ) {
+    final timeStrings =
+        times
+            .map(
+              (time) =>
+                  '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
+            )
+            .toList();
+    final timeString = timeStrings.join(', ');
 
     final reminderProvider = Provider.of<ReminderProvider>(
       context,
       listen: false,
     );
-    reminderProvider.addReminder(medicationName, timeString, days);
+    reminderProvider.addReminder(medicationName, timeString, days, note);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('알림이 추가되었습니다.'), backgroundColor: Colors.green),
@@ -755,7 +990,23 @@ class _MedicationScreenState extends State<MedicationScreen> {
     );
   }
 
-  // 텍스트에서 시간을 파싱하는 메서드
+  // 텍스트에서 시간들을 파싱하는 메서드
+  List<TimeOfDay> _parseTimesFromText(String text) {
+    // "C약 • 매일 • 14:00, 18:00" 형태에서 시간들 추출
+    final timeRegex = RegExp(r'(\d{1,2}):(\d{2})');
+    final matches = timeRegex.allMatches(text);
+    List<TimeOfDay> times = [];
+
+    for (final match in matches) {
+      final hour = int.parse(match.group(1)!);
+      final minute = int.parse(match.group(2)!);
+      times.add(TimeOfDay(hour: hour, minute: minute));
+    }
+
+    return times.isNotEmpty ? times : [TimeOfDay.now()];
+  }
+
+  // 텍스트에서 시간을 파싱하는 메서드 (단일 시간용)
   TimeOfDay _parseTimeFromText(String text) {
     // "매일 14:00 C약 알림" 형태에서 시간 추출
     final timeRegex = RegExp(r'(\d{1,2}):(\d{2})');
@@ -772,17 +1023,24 @@ class _MedicationScreenState extends State<MedicationScreen> {
   void _updateReminder(
     int id,
     String medicationName,
-    TimeOfDay time,
+    List<TimeOfDay> times,
     List<String> days,
+    String note,
   ) {
-    final timeString =
-        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    final timeStrings =
+        times
+            .map(
+              (time) =>
+                  '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
+            )
+            .toList();
+    final timeString = timeStrings.join(', ');
 
     final reminderProvider = Provider.of<ReminderProvider>(
       context,
       listen: false,
     );
-    reminderProvider.updateReminder(id, medicationName, timeString, days);
+    reminderProvider.updateReminder(id, medicationName, timeString, days, note);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('알림이 수정되었습니다.'), backgroundColor: Colors.green),
@@ -816,6 +1074,25 @@ class _MedicationScreenState extends State<MedicationScreen> {
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildNoteChip(
+    String label,
+    String selectedNote,
+    Function(bool) onSelected,
+  ) {
+    bool isSelected = selectedNote == label;
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: onSelected,
+      selectedColor: Color(0xFF174D4D).withOpacity(0.3),
+      checkmarkColor: Color(0xFF174D4D),
+      backgroundColor: Colors.grey.shade100,
+      side: BorderSide(
+        color: isSelected ? Color(0xFF174D4D) : Colors.grey.shade300,
       ),
     );
   }

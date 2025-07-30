@@ -18,16 +18,25 @@ class ReminderProvider with ChangeNotifier {
 
   List<Map<String, dynamic>> get reminders => _reminders;
 
-  void addReminder(String medicationName, String time, List<String> days) {
+  void addReminder(
+    String medicationName,
+    String time,
+    List<String> days, [
+    String note = '',
+  ]) {
     final newId = _reminders.isNotEmpty ? _reminders.last['id'] + 1 : 1;
     final daysText = _formatDaysText(days);
-    final reminderText = '${medicationName} • ${daysText} • ${time}';
+    final reminderText =
+        note.isNotEmpty
+            ? '${medicationName} • ${daysText} • ${time} • ${note}'
+            : '${medicationName} • ${daysText} • ${time}';
 
     _reminders.add({
       'id': newId,
       'text': reminderText,
       'time': time,
       'days': days,
+      'note': note,
     });
     notifyListeners();
   }
@@ -36,11 +45,15 @@ class ReminderProvider with ChangeNotifier {
     int id,
     String medicationName,
     String time,
-    List<String> days,
-  ) {
+    List<String> days, [
+    String note = '',
+  ]) {
     final timeString = time;
     final daysText = _formatDaysText(days);
-    final reminderText = '${medicationName} • ${daysText} • ${timeString}';
+    final reminderText =
+        note.isNotEmpty
+            ? '${medicationName} • ${daysText} • ${timeString} • ${note}'
+            : '${medicationName} • ${daysText} • ${timeString}';
 
     final index = _reminders.indexWhere((reminder) => reminder['id'] == id);
     if (index != -1) {
@@ -49,6 +62,7 @@ class ReminderProvider with ChangeNotifier {
         'text': reminderText,
         'time': timeString,
         'days': days,
+        'note': note,
       };
       notifyListeners();
     }
