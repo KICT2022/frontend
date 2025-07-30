@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/notification_provider.dart';
+import '../providers/reminder_provider.dart';
 import '../widgets/bottom_navigation.dart';
 
 class MedicationScreen extends StatefulWidget {
@@ -143,13 +144,24 @@ class _MedicationScreenState extends State<MedicationScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      _buildReminderItem('매일 14시 C약 알림'),
-                      _buildReminderItem('월수금 14시, 20시 D약 알림'),
+                      Consumer<ReminderProvider>(
+                        builder: (context, reminderProvider, child) {
+                          return Column(
+                            children:
+                                reminderProvider.reminders
+                                    .map(
+                                      (reminder) =>
+                                          _buildReminderItem(reminder),
+                                    )
+                                    .toList(),
+                          );
+                        },
+                      ),
                       const SizedBox(height: 20),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () => _showAddReminderDialog(),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color(0xFF174D4D),
                             foregroundColor: Colors.white,
@@ -308,7 +320,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
     );
   }
 
-  Widget _buildReminderItem(String text) {
+  Widget _buildReminderItem(Map<String, dynamic> reminder) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
@@ -319,18 +331,237 @@ class _MedicationScreenState extends State<MedicationScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(text),
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-              minimumSize: const Size(60, 30),
-            ),
-            child: const Text('수정'),
+          Text(reminder['text']),
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.edit, color: Colors.blue),
+                onPressed: () => _showAddReminderDialog(reminder),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: () => _deleteReminder(reminder['id']),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  // 알림 추가/수정 다이얼로그를 보여주는 메서드
+  void _showAddReminderDialog([Map<String, dynamic>? existingReminder]) {
+    bool isEditing = existingReminder != null;
+    String medicationName = '';
+    TimeOfDay selectedTime = TimeOfDay.now();
+    List<String> selectedDays = [];
+
+    // 수정 모드일 때 기존 데이터 설정
+    if (isEditing) {
+      final textParts = existingReminder!['text'].split(' ');
+      // "매일 14:00 C약 알림" 형태에서 "C약" 부분 추출
+      for (int i = 0; i < textParts.length; i++) {
+        if (textParts[i].contains('약')) {
+          medicationName = textParts[i];
+          break;
+        }
+      }
+      selectedTime = _parseTimeFromText(existingReminder['text']);
+      selectedDays = List<String>.from(existingReminder['days']);
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text(
+                isEditing ? '알림 수정하기' : '알림 추가하기',
+                style: TextStyle(
+                  color: Color(0xFF174D4D),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 약 이름 입력
+                    TextField(
+                      controller: TextEditingController(text: medicationName),
+                      decoration: InputDecoration(
+                        labelText: '약 이름',
+                        hintText: '예: A약, B약',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onChanged: (value) {
+                        medicationName = value;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 시간 선택
+                    ListTile(
+                      title: Text('시간 선택'),
+                      subtitle: Text(
+                        '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}',
+                      ),
+                      trailing: Icon(Icons.access_time),
+                      onTap: () async {
+                        final TimeOfDay? time = await showTimePicker(
+                          context: context,
+                          initialTime: selectedTime,
+                        );
+                        if (time != null) {
+                          setState(() {
+                            selectedTime = time;
+                          });
+                        }
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // 요일 선택
+                    Text(
+                      '요일 선택',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children:
+                          ['월', '화', '수', '목', '금', '토', '일'].map((day) {
+                            bool isSelected = selectedDays.contains(day);
+                            return FilterChip(
+                              label: Text(day),
+                              selected: isSelected,
+                              onSelected: (selected) {
+                                setState(() {
+                                  if (selected) {
+                                    selectedDays.add(day);
+                                  } else {
+                                    selectedDays.remove(day);
+                                  }
+                                });
+                              },
+                              selectedColor: Color(0xFF174D4D).withOpacity(0.3),
+                              checkmarkColor: Color(0xFF174D4D),
+                            );
+                          }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text('취소'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (medicationName.isNotEmpty && selectedDays.isNotEmpty) {
+                      if (isEditing) {
+                        _updateReminder(
+                          existingReminder!['id'],
+                          medicationName,
+                          selectedTime,
+                          selectedDays,
+                        );
+                      } else {
+                        _addReminder(
+                          medicationName,
+                          selectedTime,
+                          selectedDays,
+                        );
+                      }
+                      Navigator.of(context).pop();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('약 이름과 요일을 모두 입력해주세요.'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF174D4D),
+                    foregroundColor: Colors.white,
+                  ),
+                  child: Text(isEditing ? '수정' : '추가'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // 새로운 알림을 추가하는 메서드
+  void _addReminder(String medicationName, TimeOfDay time, List<String> days) {
+    final timeString =
+        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+
+    final reminderProvider = Provider.of<ReminderProvider>(
+      context,
+      listen: false,
+    );
+    reminderProvider.addReminder(medicationName, timeString, days);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('알림이 추가되었습니다.'), backgroundColor: Colors.green),
+    );
+  }
+
+  // 알림을 삭제하는 메서드
+  void _deleteReminder(int id) {
+    final reminderProvider = Provider.of<ReminderProvider>(
+      context,
+      listen: false,
+    );
+    reminderProvider.deleteReminder(id);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('알림이 삭제되었습니다.'), backgroundColor: Colors.orange),
+    );
+  }
+
+  // 텍스트에서 시간을 파싱하는 메서드
+  TimeOfDay _parseTimeFromText(String text) {
+    // "매일 14:00 C약 알림" 형태에서 시간 추출
+    final timeRegex = RegExp(r'(\d{1,2}):(\d{2})');
+    final match = timeRegex.firstMatch(text);
+    if (match != null) {
+      final hour = int.parse(match.group(1)!);
+      final minute = int.parse(match.group(2)!);
+      return TimeOfDay(hour: hour, minute: minute);
+    }
+    return TimeOfDay.now();
+  }
+
+  // 알림을 수정하는 메서드
+  void _updateReminder(
+    int id,
+    String medicationName,
+    TimeOfDay time,
+    List<String> days,
+  ) {
+    final timeString =
+        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+
+    final reminderProvider = Provider.of<ReminderProvider>(
+      context,
+      listen: false,
+    );
+    reminderProvider.updateReminder(id, medicationName, timeString, days);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('알림이 수정되었습니다.'), backgroundColor: Colors.green),
     );
   }
 
