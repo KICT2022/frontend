@@ -29,11 +29,30 @@ class _SearchScreenState extends State<SearchScreen> {
   String? _validationMessage;
   // 증상 입력 필드 컨트롤러
   TextEditingController _symptomInputController = TextEditingController();
+  // 증상 카드 데이터
+  final List<Map<String, dynamic>> _symptomCards = [
+    {'title': '두통', 'icon': Icons.headset, 'symptom': '머리가 아파요'},
+    {'title': '인후통', 'icon': Icons.record_voice_over, 'symptom': '목이 아파요'},
+    {'title': '요통', 'icon': Icons.accessibility, 'symptom': '허리가 아파요'},
+    {'title': '흉통', 'icon': Icons.favorite, 'symptom': '심장이 아파요'},
+    {'title': '복통', 'icon': Icons.person, 'symptom': '배가 아파요'},
+    {'title': '관절통', 'icon': Icons.accessibility_new, 'symptom': '관절이 아파요'},
+    {'title': '치통', 'icon': Icons.face, 'symptom': '이가 아파요'},
+    {'title': '귀앓이', 'icon': Icons.hearing, 'symptom': '귀가 아파요'},
+    {'title': '어깨통증', 'icon': Icons.accessibility, 'symptom': '어깨가 아파요'},
+    {'title': '무릎통증', 'icon': Icons.directions_walk, 'symptom': '무릎이 아파요'},
+    {'title': '손목통증', 'icon': Icons.pan_tool, 'symptom': '손목이 아파요'},
+    {'title': '발목통증', 'icon': Icons.directions_run, 'symptom': '발목이 아파요'},
+  ];
+  // 페이지 컨트롤러
+  late PageController _pageController;
+  int _currentPage = 0;
 
   @override
   void initState() {
     super.initState();
     _initializeControllers();
+    _pageController = PageController();
   }
 
   @override
@@ -42,6 +61,7 @@ class _SearchScreenState extends State<SearchScreen> {
       controller.dispose();
     }
     _symptomInputController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -106,6 +126,14 @@ class _SearchScreenState extends State<SearchScreen> {
       medicationProvider.addSymptom(symptom);
       _symptomInputController.clear();
     }
+  }
+
+  List<List<Map<String, dynamic>>> _getSymptomPages() {
+    List<List<Map<String, dynamic>>> pages = [];
+    for (int i = 0; i < _symptomCards.length; i += 6) {
+      pages.add(_symptomCards.skip(i).take(6).toList());
+    }
+    return pages;
   }
 
   @override
@@ -189,6 +217,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     onTap: () {
                       setState(() {
                         _isSymptomInput = true;
+                        _currentPage = 0;
                       });
                     },
                     child: Container(
@@ -230,6 +259,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     onTap: () {
                       setState(() {
                         _isSymptomInput = false;
+                        _currentPage = 0;
                       });
                     },
                     child: Container(
@@ -358,26 +388,80 @@ class _SearchScreenState extends State<SearchScreen> {
             const SizedBox(height: 16),
 
             // 증상 아이콘 그리드
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 3,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.2,
+            Column(
               children: [
-                _buildSymptomCard('두통', Icons.headset, '머리가 아파요'),
-                _buildSymptomCard('인후통', Icons.record_voice_over, '목이 아파요'),
-                _buildSymptomCard('요통', Icons.accessibility, '허리가 아파요'),
-                _buildSymptomCard('흉통', Icons.favorite, '심장이 아파요'),
-                _buildSymptomCard('복통', Icons.person, '배가 아파요'),
-                _buildSymptomCard('관절통', Icons.accessibility_new, '관절이 아파요'),
-                _buildSymptomCard('치통', Icons.face, '이가 아파요'),
-                _buildSymptomCard('귀앓이', Icons.hearing, '귀가 아파요'),
-                _buildSymptomCard('어깨통증', Icons.accessibility, '어깨가 아파요'),
-                _buildSymptomCard('무릎통증', Icons.directions_walk, '무릎이 아파요'),
-                _buildSymptomCard('손목통증', Icons.pan_tool, '손목이 아파요'),
-                _buildSymptomCard('발목통증', Icons.directions_run, '발목이 아파요'),
+                SizedBox(
+                  height: 280,
+                  child: PageView.builder(
+                    controller: _pageController,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentPage = index;
+                      });
+                    },
+                    itemCount: _getSymptomPages().length,
+                    itemBuilder: (context, pageIndex) {
+                      final pageSymptoms = _getSymptomPages()[pageIndex];
+                      return GridView.count(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
+                        childAspectRatio: 1.0,
+                        children:
+                            pageSymptoms.map((symptom) {
+                              return _buildSymptomCard(
+                                symptom['title'],
+                                symptom['icon'],
+                                symptom['symptom'],
+                              );
+                            }).toList(),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // 페이지 인디케이터
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (_currentPage > 0)
+                      IconButton(
+                        onPressed: () {
+                          _pageController.previousPage(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        },
+                        icon: const Icon(Icons.arrow_back_ios, size: 20),
+                      ),
+                    ...List.generate(_getSymptomPages().length, (index) {
+                      return Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color:
+                              _currentPage == index
+                                  ? Colors.green.shade600
+                                  : Colors.grey.shade300,
+                        ),
+                      );
+                    }),
+                    if (_currentPage < _getSymptomPages().length - 1)
+                      IconButton(
+                        onPressed: () {
+                          _pageController.nextPage(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        },
+                        icon: const Icon(Icons.arrow_forward_ios, size: 20),
+                      ),
+                  ],
+                ),
               ],
             ),
 
