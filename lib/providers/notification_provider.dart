@@ -78,4 +78,29 @@ class NotificationProvider extends ChangeNotifier {
   }
 
   int get unreadCount => getUnreadNotifications().length;
+
+  // 테스트용 알림 추가 메서드
+  void addTestNotification() {
+    final types = ['medication', 'reminder', 'warning', 'info'];
+    final titles = [
+      '복약 시간 알림',
+      '약물 상호작용 경고',
+      '복용률 달성 축하',
+      '새로운 약물 정보',
+    ];
+    final messages = [
+      '아침 약을 복용할 시간입니다.',
+      '새로 처방받은 약과 기존 약물 간 상호작용이 있을 수 있습니다.',
+      '이번 주 복용률이 95%를 달성했습니다!',
+      '새로운 약물 정보가 업데이트되었습니다.',
+    ];
+
+    final random = DateTime.now().millisecondsSinceEpoch % 4;
+    addNotification(
+      title: titles[random],
+      message: messages[random],
+      timestamp: DateTime.now().subtract(Duration(minutes: random * 10)),
+      type: types[random],
+    );
+  }
 } 

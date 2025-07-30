@@ -15,6 +15,7 @@ import 'screens/search_screen.dart';
 import 'screens/medication_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/notification_screen.dart';
 import 'utils/notification_service.dart';
 
 void main() async {
@@ -119,6 +120,10 @@ class MyApp extends StatelessWidget {
         GoRoute(
           path: '/settings',
           builder: (context, state) => const SettingsScreen(),
+        ),
+        GoRoute(
+          path: '/notifications',
+          builder: (context, state) => const NotificationScreen(),
         ),
       ],
     );
