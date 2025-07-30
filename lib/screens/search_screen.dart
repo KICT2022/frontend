@@ -13,7 +13,6 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  final _searchController = TextEditingController();
   bool _isSymptomInput = true;
   List<String> _symptoms = [
     '머리가 아파요',
@@ -24,12 +23,6 @@ class _SearchScreenState extends State<SearchScreen> {
   ];
   // 약물 입력 칸 개수를 관리하는 변수 추가
   int _drugInputCount = 2;
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -106,33 +99,6 @@ class _SearchScreenState extends State<SearchScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                elevation: 8,
-                color: Colors.white,
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Row(
-                    children: [
-                      Icon(Icons.search, size: 40, color: Color(0xFF174D4D)),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          decoration: const InputDecoration(
-                            hintText: '약 통합 검색',
-                            border: InputBorder.none,
-                          ),
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
               Card(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
