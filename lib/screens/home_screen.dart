@@ -30,9 +30,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadData() async {
     try {
-      final medicationProvider = Provider.of<MedicationProvider>(context, listen: false);
-      final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
-      
+      final medicationProvider = Provider.of<MedicationProvider>(
+        context,
+        listen: false,
+      );
+      final notificationProvider = Provider.of<NotificationProvider>(
+        context,
+        listen: false,
+      );
+
       await medicationProvider.loadMedications();
       await notificationProvider.loadSettings();
     } catch (e) {
@@ -51,9 +57,23 @@ class _HomeScreenState extends State<HomeScreen> {
         final iconSize = isSeniorMode ? 32.0 : 24.0;
         final cardPadding = isSeniorMode ? 20.0 : 16.0;
         final cardRadius = isSeniorMode ? 16.0 : 12.0;
-        
+
         return Scaffold(
-          backgroundColor: Colors.grey.shade50,
+          backgroundColor: Colors.white,
+          appBar: AppBar(
+            title: const Text('홈'),
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            elevation: 0,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.settings),
+                onPressed: () {
+                  context.go('/settings');
+                },
+              ),
+            ],
+          ),
           body: SafeArea(
             child: Column(
               children: [
@@ -103,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
-                
+
                 // 메인 콘텐츠
                 Expanded(
                   child: SingleChildScrollView(
@@ -148,45 +168,61 @@ class _HomeScreenState extends State<HomeScreen> {
                               SizedBox(height: isSeniorMode ? 16.0 : 12.0),
                               Consumer<MedicationProvider>(
                                 builder: (context, medicationProvider, child) {
-                                  final todayMedications = medicationProvider.medications.take(3).toList();
+                                  final todayMedications =
+                                      medicationProvider.medications
+                                          .take(3)
+                                          .toList();
                                   return Column(
-                                    children: todayMedications.map((medication) {
-                                      return Padding(
-                                        padding: EdgeInsets.symmetric(vertical: isSeniorMode ? 8.0 : 4.0),
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.medication,
-                                              size: isSeniorMode ? 24.0 : 20.0,
-                                              color: Colors.grey.shade600,
+                                    children:
+                                        todayMedications.map((medication) {
+                                          return Padding(
+                                            padding: EdgeInsets.symmetric(
+                                              vertical:
+                                                  isSeniorMode ? 8.0 : 4.0,
                                             ),
-                                            SizedBox(width: isSeniorMode ? 12.0 : 8.0),
-                                            Expanded(
-                                              child: Text(
-                                                medication.name,
-                                                style: TextStyle(fontSize: subtitleFontSize),
-                                              ),
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.medication,
+                                                  size:
+                                                      isSeniorMode
+                                                          ? 24.0
+                                                          : 20.0,
+                                                  color: Colors.grey.shade600,
+                                                ),
+                                                SizedBox(
+                                                  width:
+                                                      isSeniorMode ? 12.0 : 8.0,
+                                                ),
+                                                Expanded(
+                                                  child: Text(
+                                                    medication.name,
+                                                    style: TextStyle(
+                                                      fontSize:
+                                                          subtitleFontSize,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Text(
+                                                  '${medication.dosage}',
+                                                  style: TextStyle(
+                                                    fontSize: subtitleFontSize,
+                                                    color: Colors.grey.shade600,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                            Text(
-                                              '${medication.dosage}',
-                                              style: TextStyle(
-                                                fontSize: subtitleFontSize,
-                                                color: Colors.grey.shade600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    }).toList(),
+                                          );
+                                        }).toList(),
                                   );
                                 },
                               ),
                             ],
                           ),
                         ),
-                        
+
                         SizedBox(height: isSeniorMode ? 24.0 : 20.0),
-                        
+
                         // 주간 복용 달성률
                         Container(
                           padding: EdgeInsets.all(cardPadding),
@@ -222,19 +258,54 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ],
                               ),
                               SizedBox(height: isSeniorMode ? 16.0 : 12.0),
-                              _buildAchievementItem('월', 85, isSeniorMode, subtitleFontSize),
-                              _buildAchievementItem('화', 92, isSeniorMode, subtitleFontSize),
-                              _buildAchievementItem('수', 78, isSeniorMode, subtitleFontSize),
-                              _buildAchievementItem('목', 95, isSeniorMode, subtitleFontSize),
-                              _buildAchievementItem('금', 88, isSeniorMode, subtitleFontSize),
-                              _buildAchievementItem('토', 90, isSeniorMode, subtitleFontSize),
-                              _buildAchievementItem('일', 82, isSeniorMode, subtitleFontSize),
+                              _buildAchievementItem(
+                                '월',
+                                85,
+                                isSeniorMode,
+                                subtitleFontSize,
+                              ),
+                              _buildAchievementItem(
+                                '화',
+                                92,
+                                isSeniorMode,
+                                subtitleFontSize,
+                              ),
+                              _buildAchievementItem(
+                                '수',
+                                78,
+                                isSeniorMode,
+                                subtitleFontSize,
+                              ),
+                              _buildAchievementItem(
+                                '목',
+                                95,
+                                isSeniorMode,
+                                subtitleFontSize,
+                              ),
+                              _buildAchievementItem(
+                                '금',
+                                88,
+                                isSeniorMode,
+                                subtitleFontSize,
+                              ),
+                              _buildAchievementItem(
+                                '토',
+                                90,
+                                isSeniorMode,
+                                subtitleFontSize,
+                              ),
+                              _buildAchievementItem(
+                                '일',
+                                82,
+                                isSeniorMode,
+                                subtitleFontSize,
+                              ),
                             ],
                           ),
                         ),
-                        
+
                         SizedBox(height: isSeniorMode ? 24.0 : 20.0),
-                        
+
                         // 메뉴 그리드
                         Text(
                           '서비스 메뉴',
@@ -325,7 +396,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildAchievementItem(String day, int percentage, bool isSeniorMode, double fontSize) {
+  Widget _buildAchievementItem(
+    String day,
+    int percentage,
+    bool isSeniorMode,
+    double fontSize,
+  ) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: isSeniorMode ? 6.0 : 4.0),
       child: Row(
@@ -334,10 +410,7 @@ class _HomeScreenState extends State<HomeScreen> {
             width: isSeniorMode ? 40.0 : 30.0,
             child: Text(
               day,
-              style: TextStyle(
-                fontSize: fontSize,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w500),
             ),
           ),
           Expanded(
@@ -353,7 +426,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.green.shade400,
-                    borderRadius: BorderRadius.circular(isSeniorMode ? 6.0 : 4.0),
+                    borderRadius: BorderRadius.circular(
+                      isSeniorMode ? 6.0 : 4.0,
+                    ),
                   ),
                 ),
               ),
@@ -410,11 +485,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(isSeniorMode ? 12.0 : 8.0),
               ),
-              child: Icon(
-                icon,
-                size: iconSize,
-                color: color,
-              ),
+              child: Icon(icon, size: iconSize, color: color),
             ),
             SizedBox(height: isSeniorMode ? 12.0 : 8.0),
             Text(
@@ -431,4 +502,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-} 
+}

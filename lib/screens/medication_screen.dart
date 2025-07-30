@@ -17,61 +17,78 @@ class _MedicationScreenState extends State<MedicationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text('약물'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              context.go('/settings');
+            },
+          ),
+        ],
+      ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 헤더
-              const Text(
-                '오늘의 약, 잊지 마세요.',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 20),
-
-              // 약물 스케줄 테이블
-              _buildMedicationSchedule(),
-              const SizedBox(height: 20),
-
-              // 복용 약 수정 버튼
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('복용 약 수정하기'),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 헤더
+                const Text(
+                  '오늘의 약, 잊지 마세요.',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-              ),
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              // 복약 알림 설정
-              const Text(
-                '복약 알림 설정',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
+                // 약물 스케줄 테이블
+                _buildMedicationSchedule(),
+                const SizedBox(height: 20),
 
-              _buildReminderItem('매일 14시 C약 알림'),
-              _buildReminderItem('월수금 14시, 20시 D약 알림'),
-              const SizedBox(height: 20),
-
-              // 알림 추가 버튼
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
+                // 복용 약 수정 버튼
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('복용 약 수정하기'),
                   ),
-                  child: const Text('알림 추가하기'),
                 ),
-              ),
-            ],
+                const SizedBox(height: 20),
+
+                // 복약 알림 설정
+                const Text(
+                  '복약 알림 설정',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+
+                _buildReminderItem('매일 14시 C약 알림'),
+                _buildReminderItem('월수금 14시, 20시 D약 알림'),
+                const SizedBox(height: 20),
+
+                // 알림 추가 버튼
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('알림 추가하기'),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
