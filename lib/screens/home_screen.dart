@@ -35,12 +35,67 @@ class _HomeScreenState extends State<HomeScreen> {
     '오메가-3 지방산은 심장 건강에 유익합니다.',
   ];
 
+  // 일일 건강 스탬프 데이터
+  final List<Map<String, dynamic>> _stamps = [
+    {
+      'title': '물 8잔 마시기',
+      'icon': Icons.water_drop,
+      'color': Colors.blue,
+      'completed': false,
+    },
+    {
+      'title': '30분 운동하기',
+      'icon': Icons.fitness_center,
+      'color': Colors.green,
+      'completed': false,
+    },
+    {
+      'title': '과일/채소 섭취',
+      'icon': Icons.eco,
+      'color': Colors.lightGreen,
+      'completed': false,
+    },
+    {
+      'title': '스트레칭하기',
+      'icon': Icons.accessibility_new,
+      'color': Colors.orange,
+      'completed': false,
+    },
+    {
+      'title': '깊은 호흡하기',
+      'icon': Icons.air,
+      'color': Colors.cyan,
+      'completed': false,
+    },
+    {
+      'title': '비타민D 쬐기',
+      'icon': Icons.wb_sunny,
+      'color': Colors.amber,
+      'completed': false,
+    },
+    {
+      'title': '녹차 마시기',
+      'icon': Icons.local_drink,
+      'color': Colors.teal,
+      'completed': false,
+    },
+    {
+      'title': '규칙적 배변',
+      'icon': Icons.schedule,
+      'color': Colors.brown,
+      'completed': false,
+    },
+  ];
+
+  String _lastResetDate = '';
+
   @override
   void initState() {
     super.initState();
     // 약간의 지연 후 데이터 로드
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
+      _checkDailyReset();
     });
   }
 
@@ -66,6 +121,26 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       // 오류 처리
     }
+  }
+
+  // 일일 초기화 확인
+  void _checkDailyReset() {
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    if (_lastResetDate != today) {
+      setState(() {
+        _lastResetDate = today;
+        for (var stamp in _stamps) {
+          stamp['completed'] = false;
+        }
+      });
+    }
+  }
+
+  // 스탬프 토글
+  void _toggleStamp(int index) {
+    setState(() {
+      _stamps[index]['completed'] = !_stamps[index]['completed'];
+    });
   }
 
   // 오늘의 건강 포춘쿠키 메시지 가져오기
@@ -269,6 +344,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 24),
 
+                  // 일일 건강 스탬프
                   Card(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
@@ -283,13 +359,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           Row(
                             children: [
                               Icon(
-                                Icons.trending_up,
+                                Icons.star,
                                 size: 28,
-                                color: Color(0xFFFFD700),
+                                color: Colors.amber.shade600,
                               ),
                               const SizedBox(width: 12),
                               Text(
-                                '주간 복용 달성률',
+                                '일일 건강 스탬프',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -298,15 +374,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
-                          // 기존 달성률 위젯 활용
-                          _buildAchievementItem('월', 85, isSeniorMode, 14),
-                          _buildAchievementItem('화', 92, isSeniorMode, 14),
-                          _buildAchievementItem('수', 78, isSeniorMode, 14),
-                          _buildAchievementItem('목', 95, isSeniorMode, 14),
-                          _buildAchievementItem('금', 88, isSeniorMode, 14),
-                          _buildAchievementItem('토', 90, isSeniorMode, 14),
-                          _buildAchievementItem('일', 82, isSeniorMode, 14),
+                          const SizedBox(height: 16),
+                          // 4행 2열 지그재그 스탬프
+                          _buildStampsGrid(),
                         ],
                       ),
                     ),
@@ -393,6 +463,78 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildStampsGrid() {
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 4, // 4열로 변경
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+      childAspectRatio: 0.8, // 가로 비율 조정
+      children: List.generate(_stamps.length, (index) {
+        final stamp = _stamps[index];
+        final isCompleted = stamp['completed'] as bool;
+
+        return GestureDetector(
+          onTap: () => _toggleStamp(index),
+          child: Container(
+            decoration: BoxDecoration(
+              color:
+                  isCompleted
+                      ? stamp['color'].withOpacity(0.3)
+                      : Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isCompleted ? stamp['color'] : Colors.grey.shade300,
+                width: isCompleted ? 2 : 1,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // 도장 모양 아이콘
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isCompleted ? stamp['color'] : Colors.grey.shade300,
+                    border: Border.all(
+                      color:
+                          isCompleted ? stamp['color'] : Colors.grey.shade400,
+                      width: 2,
+                    ),
+                  ),
+                  child: Icon(
+                    stamp['icon'],
+                    size: 20,
+                    color: isCompleted ? Colors.white : Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  stamp['title'],
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                    color: isCompleted ? stamp['color'] : Colors.grey.shade700,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (isCompleted) ...[
+                  const SizedBox(height: 2),
+                  Icon(Icons.check_circle, size: 12, color: stamp['color']),
+                ],
+              ],
+            ),
+          ),
+        );
+      }),
     );
   }
 }

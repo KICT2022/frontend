@@ -164,6 +164,51 @@ class _MedicationScreenState extends State<MedicationScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 24),
+
+              // 주간 복용 달성률
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                elevation: 8,
+                color: Colors.white,
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.trending_up,
+                            size: 28,
+                            color: Color(0xFFFFD700),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            '주간 복용 달성률',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF174D4D),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      // 주간 달성률 위젯
+                      _buildAchievementItem('월', 85, false, 14),
+                      _buildAchievementItem('화', 92, false, 14),
+                      _buildAchievementItem('수', 78, false, 14),
+                      _buildAchievementItem('목', 95, false, 14),
+                      _buildAchievementItem('금', 88, false, 14),
+                      _buildAchievementItem('토', 90, false, 14),
+                      _buildAchievementItem('일', 82, false, 14),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -283,6 +328,61 @@ class _MedicationScreenState extends State<MedicationScreen> {
               minimumSize: const Size(60, 30),
             ),
             child: const Text('수정'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAchievementItem(
+    String day,
+    int percentage,
+    bool isSeniorMode,
+    double fontSize,
+  ) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: isSeniorMode ? 4.0 : 3.0),
+      child: Row(
+        children: [
+          SizedBox(
+            width: isSeniorMode ? 32.0 : 28.0,
+            child: Text(
+              day,
+              style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w500),
+            ),
+          ),
+          Expanded(
+            child: Container(
+              height: isSeniorMode ? 10.0 : 8.0,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(isSeniorMode ? 5.0 : 4.0),
+              ),
+              child: FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: percentage / 100,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade400,
+                    borderRadius: BorderRadius.circular(
+                      isSeniorMode ? 5.0 : 4.0,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(width: isSeniorMode ? 10.0 : 8.0),
+          SizedBox(
+            width: isSeniorMode ? 32.0 : 28.0,
+            child: Text(
+              '$percentage%',
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.w600,
+                color: Colors.green.shade600,
+              ),
+            ),
           ),
         ],
       ),
