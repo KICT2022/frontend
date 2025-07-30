@@ -23,6 +23,75 @@ class _SearchScreenState extends State<SearchScreen> {
   ];
   // 약물 입력 칸 개수를 관리하는 변수 추가
   int _drugInputCount = 2;
+  // 약물 입력 칸들의 TextEditingController 리스트
+  List<TextEditingController> _drugControllers = [];
+  // 입력 검증 메시지
+  String? _validationMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeControllers();
+  }
+
+  @override
+  void dispose() {
+    for (var controller in _drugControllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  void _initializeControllers() {
+    // 기존 컨트롤러들 정리
+    for (var controller in _drugControllers) {
+      controller.dispose();
+    }
+    _drugControllers.clear();
+
+    // 새로운 컨트롤러들 생성
+    for (int i = 0; i < _drugInputCount; i++) {
+      _drugControllers.add(TextEditingController());
+    }
+  }
+
+  void _addController() {
+    // 새로운 컨트롤러만 추가
+    _drugControllers.add(TextEditingController());
+  }
+
+  void _removeController(int index) {
+    if (index < _drugControllers.length) {
+      _drugControllers[index].dispose();
+      _drugControllers.removeAt(index);
+    }
+  }
+
+  bool _validateDrugInputs() {
+    // 모든 입력 칸이 채워져 있는지 확인
+    for (int i = 0; i < _drugControllers.length; i++) {
+      if (_drugControllers[i].text.trim().isEmpty) {
+        setState(() {
+          _validationMessage = '${i + 1}번째 약을 먼저 입력해주세요.';
+        });
+        return false;
+      }
+    }
+
+    setState(() {
+      _validationMessage = null;
+    });
+    return true;
+  }
+
+  void _addNewDrugInput() {
+    if (_validateDrugInputs()) {
+      setState(() {
+        _drugInputCount++;
+        _addController();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -404,6 +473,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         GestureDetector(
                           onTap: () {
                             setState(() {
+                              _removeController(index);
                               _drugInputCount--;
                             });
                           },
@@ -433,10 +503,22 @@ class _SearchScreenState extends State<SearchScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: TextField(
+                            controller:
+                                index < _drugControllers.length
+                                    ? _drugControllers[index]
+                                    : null,
                             decoration: InputDecoration(
                               hintText: '${index + 1}번째 약 입력',
                               border: InputBorder.none,
                             ),
+                            onChanged: (value) {
+                              // 입력이 변경되면 검증 메시지 제거
+                              if (_validationMessage != null) {
+                                setState(() {
+                                  _validationMessage = null;
+                                });
+                              }
+                            },
                           ),
                         ),
                       ),
@@ -454,15 +536,32 @@ class _SearchScreenState extends State<SearchScreen> {
             }),
             const SizedBox(height: 20),
 
+            // 검증 메시지 표시 (추가하기 버튼 위)
+            if (_validationMessage != null)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  border: Border.all(color: Colors.red.shade200),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  _validationMessage!,
+                  style: TextStyle(
+                    color: Colors.red.shade700,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+
             // 추가하기 버튼
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    _drugInputCount++;
-                  });
-                },
+                onPressed: _addNewDrugInput,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
