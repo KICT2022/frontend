@@ -30,7 +30,7 @@ class _SearchScreenState extends State<SearchScreen> {
       backgroundColor: const Color(0xFFF6F8FA),
       appBar: AppBar(
         title: const Text(
-          '검색',
+          '진단',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 24,
@@ -93,97 +93,105 @@ class _SearchScreenState extends State<SearchScreen> {
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                elevation: 8,
-                color: Colors.white,
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '최근기록 | 타이레놀 화이투벤 콜드런',
-                        style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+      body: Column(
+        children: [
+          // 기능 선택 탭
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isSymptomInput = true;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color:
+                            _isSymptomInput
+                                ? Colors.green.shade50
+                                : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color:
+                              _isSymptomInput
+                                  ? Colors.green.shade300
+                                  : Colors.grey.shade300,
+                        ),
                       ),
-                      const SizedBox(height: 20),
-                      // 기존 증상/약물 입력 탭, 결과 등은 여기에 그대로 배치
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                setState(() {
-                                  _isSymptomInput = true;
-                                });
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    _isSymptomInput
-                                        ? Color(0xFF174D4D)
-                                        : Colors.white,
-                                foregroundColor:
-                                    _isSymptomInput
-                                        ? Colors.white
-                                        : Colors.black,
-                                side: const BorderSide(
-                                  color: Color(0xFF174D4D),
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: const Text('증상입력'),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                setState(() {
-                                  _isSymptomInput = false;
-                                });
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    !_isSymptomInput
-                                        ? Color(0xFF174D4D)
-                                        : Colors.white,
-                                foregroundColor:
-                                    !_isSymptomInput
-                                        ? Colors.white
-                                        : Colors.black,
-                                side: const BorderSide(
-                                  color: Color(0xFF174D4D),
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: const Text('약물 상호작용'),
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        '증상입력모드',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontWeight:
+                              _isSymptomInput
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
+                          fontSize: 16,
+                          color:
+                              _isSymptomInput
+                                  ? Color(0xFF174D4D)
+                                  : Colors.grey.shade600,
+                        ),
                       ),
-                      const SizedBox(height: 20),
-                      // 기존 증상 입력/약물 상호작용 위젯
-                      if (_isSymptomInput) _buildSymptomInput(),
-                      if (!_isSymptomInput) _buildDrugInteraction(),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isSymptomInput = false;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color:
+                            !_isSymptomInput
+                                ? Colors.green.shade50
+                                : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color:
+                              !_isSymptomInput
+                                  ? Colors.green.shade300
+                                  : Colors.grey.shade300,
+                        ),
+                      ),
+                      child: Text(
+                        '약물상호작용모드',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontWeight:
+                              !_isSymptomInput
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
+                          fontSize: 16,
+                          color:
+                              !_isSymptomInput
+                                  ? Color(0xFF174D4D)
+                                  : Colors.grey.shade600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+          // 메인 콘텐츠
+          Expanded(
+            child:
+                _isSymptomInput
+                    ? _buildSymptomInputScreen()
+                    : _buildDrugInteractionScreen(),
+          ),
+        ],
       ),
       bottomNavigationBar: BottomNavigation(
         currentIndex: 1,
@@ -207,195 +215,332 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildSymptomInput() {
-    return Consumer<MedicationProvider>(
-      builder: (context, medicationProvider, child) {
-        return Column(
+  Widget _buildSymptomInputScreen() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20.0, 0.0, 20.0, 20.0),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 직접 입력
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const TextField(
-                      decoration: InputDecoration(
-                        hintText: '직접입력',
+            // 증상 검색 입력 필드
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.search, color: Colors.grey.shade600),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      decoration: const InputDecoration(
+                        hintText: '증상을 입력해주세요',
                         border: InputBorder.none,
+                        hintStyle: TextStyle(color: Colors.grey),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                const Icon(Icons.search),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // 증상 간편 입력 섹션
+            Text(
+              '증상 간편 입력',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF174D4D),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // 증상 아이콘 그리드
+            GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 1.5,
+              children: [
+                _buildSymptomCard('두통', Icons.headset, '머리가 아파요'),
+                _buildSymptomCard('인후통', Icons.record_voice_over, '목이 아파요'),
+                _buildSymptomCard('요통', Icons.accessibility, '허리가 아파요'),
+                _buildSymptomCard('흉통', Icons.favorite, '심장이 아파요'),
+                _buildSymptomCard('복통', Icons.person, '눈이 아파요'),
               ],
             ),
-            const SizedBox(height: 20),
-            // 증상 목록
-            SizedBox(
-              height: 200,
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: _symptoms.length,
-                itemBuilder: (context, index) {
-                  final symptom = _symptoms[index];
-                  final isSelected = medicationProvider.selectedSymptoms
-                      .contains(symptom);
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    decoration: BoxDecoration(
-                      color: isSelected ? Colors.yellow.shade100 : Colors.white,
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: ListTile(
-                      leading: const Text('->'),
-                      title: Text(symptom),
-                      onTap: () {
-                        if (isSelected) {
-                          medicationProvider.removeSymptom(symptom);
-                        } else {
-                          medicationProvider.addSymptom(symptom);
-                        }
-                      },
-                    ),
-                  );
-                },
+
+            const SizedBox(height: 32),
+
+            // 지금 내 증상은 섹션
+            Text(
+              '지금 내 증상은',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF174D4D),
               ),
             ),
-            // 선택된 증상 표시
-            if (medicationProvider.selectedSymptoms.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  medicationProvider.selectedSymptoms.join(', '),
-                  style: const TextStyle(fontSize: 14),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    // 자가 진단 시작
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
+            const SizedBox(height: 16),
+
+            // 선택된 증상 칩들
+            Consumer<MedicationProvider>(
+              builder: (context, medicationProvider, child) {
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (medicationProvider.selectedSymptoms.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '지금 내 증상은',
+                          style: TextStyle(color: Colors.grey.shade600),
+                        ),
+                      ),
+                    ...medicationProvider.selectedSymptoms.map(
+                      (symptom) => Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade600,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              symptom,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap:
+                                  () =>
+                                      medicationProvider.removeSymptom(symptom),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+
+            const SizedBox(height: 32),
+
+            // 나에게 맞는 약 확인하기 버튼
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  // 나에게 맞는 약 확인 로직
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green.shade600,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Text('몸 자가 진단 시작'),
+                ),
+                child: const Text(
+                  '나에게 맞는 약 확인하기',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
-            ],
+            ),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 
-  Widget _buildDrugInteraction() {
-    return Column(
-      children: [
-        // 동적으로 생성되는 약물 입력 칸들
-        ...List.generate(_drugInputCount, (index) {
-          return Column(
-            children: [
-              Row(
-                children: [
-                  // 삭제 버튼 공간 (1, 2번째는 빈 공간, 3번째부터는 삭제 버튼)
-                  if (index >= 2) ...[
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _drugInputCount--;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                  ] else ...[
-                    // 1, 2번째 약 입력칸을 위한 빈 공간
-                    Container(width: 24, height: 24),
-                  ],
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: TextField(
-                        decoration: InputDecoration(
-                          hintText: '${index + 1}번째 약 입력',
-                          border: InputBorder.none,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.camera_alt),
-                ],
+  Widget _buildDrugInteractionScreen() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20.0, 0.0, 20.0, 20.0),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '약물 상호작용 확인',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF174D4D),
               ),
-              if (index < _drugInputCount - 1) ...[
-                const SizedBox(height: 20),
-                const Icon(Icons.add, size: 32, color: Colors.blue),
-                const SizedBox(height: 20),
+            ),
+            const SizedBox(height: 16),
+
+            // 동적으로 생성되는 약물 입력 칸들
+            ...List.generate(_drugInputCount, (index) {
+              return Column(
+                children: [
+                  Row(
+                    children: [
+                      // 삭제 버튼 공간 (1, 2번째는 빈 공간, 3번째부터는 삭제 버튼)
+                      if (index >= 2) ...[
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _drugInputCount--;
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ] else ...[
+                        // 1, 2번째 약 입력칸을 위한 빈 공간
+                        Container(width: 24, height: 24),
+                      ],
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: TextField(
+                            decoration: InputDecoration(
+                              hintText: '${index + 1}번째 약 입력',
+                              border: InputBorder.none,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.camera_alt),
+                    ],
+                  ),
+                  if (index < _drugInputCount - 1) ...[
+                    const SizedBox(height: 20),
+                    const Icon(Icons.add, size: 32, color: Colors.blue),
+                    const SizedBox(height: 20),
+                  ],
+                ],
+              );
+            }),
+            const SizedBox(height: 20),
+
+            // 추가하기 버튼
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _drugInputCount++;
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('추가하기'),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // 복용 가능 여부 확인 버튼
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('복용 가능 여부 확인'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSymptomCard(String title, IconData icon, String symptom) {
+    return Consumer<MedicationProvider>(
+      builder: (context, medicationProvider, child) {
+        final isSelected = medicationProvider.selectedSymptoms.contains(
+          symptom,
+        );
+
+        return GestureDetector(
+          onTap: () {
+            if (isSelected) {
+              medicationProvider.removeSymptom(symptom);
+            } else {
+              medicationProvider.addSymptom(symptom);
+            }
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: isSelected ? Colors.green.shade50 : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color:
+                    isSelected ? Colors.green.shade300 : Colors.grey.shade300,
+                width: isSelected ? 2 : 1,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 32,
+                  color:
+                      isSelected ? Colors.green.shade600 : Colors.grey.shade600,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color:
+                        isSelected
+                            ? Colors.green.shade600
+                            : Colors.grey.shade700,
+                  ),
+                ),
               ],
-            ],
-          );
-        }),
-        const SizedBox(height: 20),
-        // 추가하기 버튼
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _drugInputCount++;
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
             ),
-            child: const Text('추가하기'),
           ),
-        ),
-        const SizedBox(height: 20),
-        // 복용 가능 여부 확인 버튼
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('복용 가능 여부 확인'),
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 }

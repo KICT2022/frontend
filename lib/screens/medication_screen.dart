@@ -18,7 +18,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
       backgroundColor: const Color(0xFFF6F8FA),
       appBar: AppBar(
         title: const Text(
-          '약물',
+          '복약',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 24,

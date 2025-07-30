@@ -42,12 +42,12 @@ class BottomNavigation extends StatelessWidget {
           BottomNavigationBarItem(
             icon: Icon(Icons.search_outlined),
             activeIcon: Icon(Icons.search),
-            label: '검색',
+            label: '진단',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.medication_outlined),
             activeIcon: Icon(Icons.medication),
-            label: '약물',
+            label: '복약',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
@@ -58,4 +58,4 @@ class BottomNavigation extends StatelessWidget {
       ),
     );
   }
-} 
+}
