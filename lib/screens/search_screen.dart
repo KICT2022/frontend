@@ -336,6 +336,17 @@ class _SearchScreenState extends State<SearchScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 증상 직접 입력 섹션
+            Text(
+              '증상 직접 입력',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF174D4D),
+              ),
+            ),
+            const SizedBox(height: 16),
+
             // 증상 검색 입력 필드
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -421,7 +432,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     },
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 4),
                 // 페이지 인디케이터
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -465,7 +476,7 @@ class _SearchScreenState extends State<SearchScreen> {
               ],
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 16),
 
             // 지금 내 증상은 섹션
             Text(
