@@ -331,10 +331,10 @@ class _SearchScreenState extends State<SearchScreen> {
             GridView.count(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 1.5,
+              crossAxisCount: 3,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.2,
               children: [
                 _buildSymptomCard('두통', Icons.headset, '머리가 아파요'),
                 _buildSymptomCard('인후통', Icons.record_voice_over, '목이 아파요'),
