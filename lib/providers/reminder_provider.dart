@@ -20,8 +20,8 @@ class ReminderProvider with ChangeNotifier {
 
   void addReminder(String medicationName, String time, List<String> days) {
     final newId = _reminders.isNotEmpty ? _reminders.last['id'] + 1 : 1;
-    final daysText = days.join(', ');
-    final reminderText = '${daysText} ${time} ${medicationName} 알림';
+    final daysText = _formatDaysText(days);
+    final reminderText = '${medicationName} • ${daysText} • ${time}';
 
     _reminders.add({
       'id': newId,
@@ -39,8 +39,8 @@ class ReminderProvider with ChangeNotifier {
     List<String> days,
   ) {
     final timeString = time;
-    final daysText = days.join(', ');
-    final reminderText = '${daysText} ${timeString} ${medicationName} 알림';
+    final daysText = _formatDaysText(days);
+    final reminderText = '${medicationName} • ${daysText} • ${timeString}';
 
     final index = _reminders.indexWhere((reminder) => reminder['id'] == id);
     if (index != -1) {
@@ -52,6 +52,23 @@ class ReminderProvider with ChangeNotifier {
       };
       notifyListeners();
     }
+  }
+
+  // 요일 텍스트를 포맷하는 메서드
+  String _formatDaysText(List<String> days) {
+    // 모든 요일이 선택되어 있으면 "매일"로 표시
+    if (days.length == 7 &&
+        days.contains('월') &&
+        days.contains('화') &&
+        days.contains('수') &&
+        days.contains('목') &&
+        days.contains('금') &&
+        days.contains('토') &&
+        days.contains('일')) {
+      return '매일';
+    }
+    // 그렇지 않으면 기존 방식대로 쉼표로 구분
+    return days.join(', ');
   }
 
   void deleteReminder(int id) {
