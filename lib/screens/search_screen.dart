@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/medication_provider.dart';
+import 'package:go_router/go_router.dart';
+import '../widgets/bottom_navigation.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -73,10 +75,7 @@ class _SearchScreenState extends State<SearchScreen> {
               // 최근 기록
               const Text(
                 '최근기록 | 타이레놀 화이투벤 콜드런',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
               const SizedBox(height: 20),
 
@@ -91,8 +90,10 @@ class _SearchScreenState extends State<SearchScreen> {
                         });
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _isSymptomInput ? Colors.green : Colors.white,
-                        foregroundColor: _isSymptomInput ? Colors.white : Colors.black,
+                        backgroundColor:
+                            _isSymptomInput ? Colors.green : Colors.white,
+                        foregroundColor:
+                            _isSymptomInput ? Colors.white : Colors.black,
                         side: BorderSide(color: Colors.black),
                       ),
                       child: const Text('증상입력'),
@@ -107,8 +108,10 @@ class _SearchScreenState extends State<SearchScreen> {
                         });
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: !_isSymptomInput ? Colors.green : Colors.white,
-                        foregroundColor: !_isSymptomInput ? Colors.white : Colors.black,
+                        backgroundColor:
+                            !_isSymptomInput ? Colors.green : Colors.white,
+                        foregroundColor:
+                            !_isSymptomInput ? Colors.white : Colors.black,
                         side: BorderSide(color: Colors.black),
                       ),
                       child: const Text('약물간 상호작용'),
@@ -120,12 +123,31 @@ class _SearchScreenState extends State<SearchScreen> {
 
               // 증상 입력 탭
               if (_isSymptomInput) _buildSymptomInput(),
-              
+
               // 약물 상호작용 탭
               if (!_isSymptomInput) _buildDrugInteraction(),
             ],
           ),
         ),
+      ),
+      bottomNavigationBar: BottomNavigation(
+        currentIndex: 1,
+        onTap: (index) {
+          switch (index) {
+            case 0:
+              context.go('/home');
+              break;
+            case 1:
+              // 이미 검색 화면
+              break;
+            case 2:
+              context.go('/medication');
+              break;
+            case 3:
+              context.go('/profile');
+              break;
+          }
+        },
       ),
     );
   }
@@ -166,12 +188,14 @@ class _SearchScreenState extends State<SearchScreen> {
                   itemCount: _symptoms.length,
                   itemBuilder: (context, index) {
                     final symptom = _symptoms[index];
-                    final isSelected = medicationProvider.selectedSymptoms.contains(symptom);
-                    
+                    final isSelected = medicationProvider.selectedSymptoms
+                        .contains(symptom);
+
                     return Container(
                       margin: const EdgeInsets.only(bottom: 8),
                       decoration: BoxDecoration(
-                        color: isSelected ? Colors.yellow.shade100 : Colors.white,
+                        color:
+                            isSelected ? Colors.yellow.shade100 : Colors.white,
                         border: Border.all(color: Colors.grey.shade300),
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -314,4 +338,4 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
     );
   }
-} 
+}

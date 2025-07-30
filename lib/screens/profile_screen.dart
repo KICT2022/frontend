@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import '../providers/user_provider.dart';
-import '../models/user.dart';
+import 'package:go_router/go_router.dart';
+import '../widgets/bottom_navigation.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -64,31 +64,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   // 사용자 정보
                   _buildInfoSection('성별', user.gender),
-                  _buildInfoSection('나이', '${DateTime.now().year - user.birthDate.year}세'),
-                  
+                  _buildInfoSection(
+                    '나이',
+                    '${DateTime.now().year - user.birthDate.year}세',
+                  ),
+
                   // 병력
-                  _buildMultiSelectSection(
-                    '병력',
-                    user.medicalHistory,
-                    ['위염', '편도염'],
-                  ),
-                  
+                  _buildMultiSelectSection('병력', user.medicalHistory, [
+                    '위염',
+                    '편도염',
+                  ]),
+
                   // 복용중인 약
-                  _buildMultiSelectSection(
-                    '복용중인 약',
-                    user.currentMedications,
-                    ['A약', 'B약'],
-                  ),
-                  
+                  _buildMultiSelectSection('복용중인 약', user.currentMedications, [
+                    'A약',
+                    'B약',
+                  ]),
+
                   const SizedBox(height: 20),
 
                   // 내 주변 약국
                   const Text(
                     '내 주변 약국',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -162,6 +160,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ),
+      bottomNavigationBar: BottomNavigation(
+        currentIndex: 3,
+        onTap: (index) {
+          switch (index) {
+            case 0:
+              context.go('/home');
+              break;
+            case 1:
+              context.go('/search');
+              break;
+            case 2:
+              context.go('/medication');
+              break;
+            case 3:
+              // 이미 프로필 화면
+              break;
+          }
+        },
+      ),
     );
   }
 
@@ -185,7 +202,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildMultiSelectSection(String label, List<String> selectedItems, List<String> options) {
+  Widget _buildMultiSelectSection(
+    String label,
+    List<String> selectedItems,
+    List<String> options,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
@@ -195,19 +216,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
-            children: options.map((option) {
-              final isSelected = selectedItems.contains(option);
-              return ChoiceChip(
-                label: Text(option),
-                selected: isSelected,
-                onSelected: (selected) {
-                  // 실제 구현에서는 Provider를 통해 상태 업데이트
-                },
-              );
-            }).toList(),
+            children:
+                options.map((option) {
+                  final isSelected = selectedItems.contains(option);
+                  return ChoiceChip(
+                    label: Text(option),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      // 실제 구현에서는 Provider를 통해 상태 업데이트
+                    },
+                  );
+                }).toList(),
           ),
         ],
       ),
     );
   }
-} 
+}

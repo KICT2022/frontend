@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/medication_provider.dart';
 import '../providers/auth_provider.dart';
+import 'package:go_router/go_router.dart';
+import '../widgets/bottom_navigation.dart';
 
 class MedicationScreen extends StatefulWidget {
   const MedicationScreen({super.key});
@@ -24,10 +26,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
               // 헤더
               const Text(
                 '오늘의 약, 잊지 마세요.',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
 
@@ -52,10 +51,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
               // 복약 알림 설정
               const Text(
                 '복약 알림 설정',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
 
@@ -78,6 +74,25 @@ class _MedicationScreenState extends State<MedicationScreen> {
             ],
           ),
         ),
+      ),
+      bottomNavigationBar: BottomNavigation(
+        currentIndex: 2,
+        onTap: (index) {
+          switch (index) {
+            case 0:
+              context.go('/home');
+              break;
+            case 1:
+              context.go('/search');
+              break;
+            case 2:
+              // 이미 약물 화면
+              break;
+            case 3:
+              context.go('/profile');
+              break;
+          }
+        },
       ),
     );
   }
@@ -108,7 +123,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
               ],
             ),
           ),
-          
+
           // A약 행
           Container(
             padding: const EdgeInsets.all(12),
@@ -118,21 +133,18 @@ class _MedicationScreenState extends State<MedicationScreen> {
             child: const Row(
               children: [
                 Expanded(
-                  child: Text('A약', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: Text(
+                    'A약',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
-                Expanded(
-                  child: Text('식전 30분', textAlign: TextAlign.center),
-                ),
-                Expanded(
-                  child: Text('', textAlign: TextAlign.center),
-                ),
-                Expanded(
-                  child: Text('식전 30분', textAlign: TextAlign.center),
-                ),
+                Expanded(child: Text('식전 30분', textAlign: TextAlign.center)),
+                Expanded(child: Text('', textAlign: TextAlign.center)),
+                Expanded(child: Text('식전 30분', textAlign: TextAlign.center)),
               ],
             ),
           ),
-          
+
           // B약 행
           Container(
             padding: const EdgeInsets.all(12),
@@ -142,17 +154,14 @@ class _MedicationScreenState extends State<MedicationScreen> {
             child: const Row(
               children: [
                 Expanded(
-                  child: Text('B약', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: Text(
+                    'B약',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
-                Expanded(
-                  child: Text('식후 30분', textAlign: TextAlign.center),
-                ),
-                Expanded(
-                  child: Text('식후 30분', textAlign: TextAlign.center),
-                ),
-                Expanded(
-                  child: Text('식후 30분', textAlign: TextAlign.center),
-                ),
+                Expanded(child: Text('식후 30분', textAlign: TextAlign.center)),
+                Expanded(child: Text('식후 30분', textAlign: TextAlign.center)),
+                Expanded(child: Text('식후 30분', textAlign: TextAlign.center)),
               ],
             ),
           ),
@@ -186,4 +195,4 @@ class _MedicationScreenState extends State<MedicationScreen> {
       ),
     );
   }
-} 
+}
