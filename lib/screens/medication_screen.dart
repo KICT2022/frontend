@@ -426,9 +426,43 @@ class _MedicationScreenState extends State<MedicationScreen> {
                     const SizedBox(height: 16),
 
                     // 요일 선택
-                    Text(
-                      '요일 선택',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '요일 선택',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              if (selectedDays.length == 7) {
+                                // 모든 요일이 선택되어 있으면 전체 해제
+                                selectedDays.clear();
+                              } else {
+                                // 모든 요일 선택
+                                selectedDays.clear();
+                                selectedDays.addAll([
+                                  '월',
+                                  '화',
+                                  '수',
+                                  '목',
+                                  '금',
+                                  '토',
+                                  '일',
+                                ]);
+                              }
+                            });
+                          },
+                          child: Text(
+                            selectedDays.length == 7 ? '전체 해제' : '전체 선택',
+                            style: TextStyle(
+                              color: Color(0xFF174D4D),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     Wrap(
