@@ -209,6 +209,9 @@ class _MedicationScreenState extends State<MedicationScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
+                      // 오늘의 복용 완료 버튼
+                      _buildTodayCompletionButton(),
+                      const SizedBox(height: 20),
                       // 월간 달성률 스탬프 그리드
                       _buildMonthlyAchievementGrid(),
                     ],
@@ -1091,6 +1094,96 @@ class _MedicationScreenState extends State<MedicationScreen> {
     );
   }
 
+  Widget _buildTodayCompletionButton() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    // 오늘 복용 완료 여부 확인 (실제로는 데이터베이스에서 확인)
+    bool isTodayCompleted = false; // 샘플 데이터
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isTodayCompleted ? Colors.green.shade50 : Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color:
+              isTodayCompleted ? Colors.green.shade200 : Colors.blue.shade200,
+          width: 2,
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isTodayCompleted ? Icons.check_circle : Icons.medication,
+                size: 24,
+                color:
+                    isTodayCompleted
+                        ? Colors.green.shade600
+                        : Colors.blue.shade600,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isTodayCompleted ? '오늘 복용 완료!' : '오늘의 약 복용하기',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color:
+                      isTodayCompleted
+                          ? Colors.green.shade700
+                          : Colors.blue.shade700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            isTodayCompleted
+                ? '${now.month}월 ${now.day}일 복용을 완료했습니다!'
+                : '오늘(${now.month}월 ${now.day}일) 복용한 약을 체크해주세요.',
+            style: TextStyle(
+              fontSize: 14,
+              color:
+                  isTodayCompleted
+                      ? Colors.green.shade600
+                      : Colors.blue.shade600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                _showTodayCompletionDialog();
+              },
+              icon: Icon(isTodayCompleted ? Icons.check : Icons.add, size: 20),
+              label: Text(
+                isTodayCompleted ? '완료됨' : '복용 완료 체크',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    isTodayCompleted
+                        ? Colors.green.shade600
+                        : Colors.blue.shade600,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMonthlyAchievementGrid() {
     // 현재 월의 날짜 정보 계산
     final now = DateTime.now();
@@ -1183,6 +1276,127 @@ class _MedicationScreenState extends State<MedicationScreen> {
         }),
       ],
     );
+  }
+
+  void _showTodayCompletionDialog() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.medication, color: Color(0xFF174D4D), size: 28),
+              const SizedBox(width: 8),
+              Text(
+                '오늘의 복용 완료',
+                style: TextStyle(
+                  color: Color(0xFF174D4D),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${now.month}월 ${now.day}일 복용을 완료하셨나요?',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '• A약 (아침, 저녁)\n• B약 (아침, 점심, 저녁)',
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      color: Colors.green.shade600,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '복용 완료 시 오늘 날짜에 스탬프가 찍힙니다!',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.green.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('취소', style: TextStyle(color: Colors.grey.shade600)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                // 실제로는 데이터베이스에 복용 완료 기록을 저장
+                _completeTodayMedication();
+                Navigator.of(context).pop();
+
+                // 성공 메시지 표시
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        Icon(Icons.check_circle, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        Text('오늘의 복용이 완료되었습니다! 🎉'),
+                      ],
+                    ),
+                    backgroundColor: Colors.green.shade600,
+                    duration: const Duration(seconds: 3),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF174D4D),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text('복용 완료'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _completeTodayMedication() {
+    // 실제로는 데이터베이스에 복용 완료 기록을 저장하는 로직
+    // 예: Provider를 통해 복용 기록을 업데이트
+    print('오늘의 복용이 완료되었습니다: ${DateTime.now()}');
+
+    // 화면 새로고침 (실제로는 Provider를 통해 상태 업데이트)
+    setState(() {
+      // 상태 업데이트 로직
+    });
   }
 
   Widget _buildDailyAchievementItem(
