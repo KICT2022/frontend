@@ -244,76 +244,343 @@ class _MedicationScreenState extends State<MedicationScreen> {
     );
   }
 
-  Widget _buildMedicationSchedule() {
+  // 오늘 복용해야 하는 약들을 가져오는 메서드
+  List<Map<String, dynamic>> _getTodayMedications(
+    List<Map<String, dynamic>> reminders,
+  ) {
+    final now = DateTime.now();
+    final today = now.weekday; // 1: 월요일, 2: 화요일, ..., 7: 일요일
+    final todayKorean = _getKoreanWeekday(today);
+
+    List<Map<String, dynamic>> todayMedications = [];
+
+    for (final reminder in reminders) {
+      final days = List<String>.from(reminder['days']);
+      if (days.contains(todayKorean)) {
+        // 시간별로 약을 분류
+        final times = reminder['time'].split(', ');
+        for (final time in times) {
+          final timeOfDay = _getTimeOfDay(time);
+          todayMedications.add({
+            'name': reminder['text'].split(' • ')[0], // 약 이름
+            'time': time,
+            'timeOfDay': timeOfDay,
+            'note': reminder['note'] ?? '',
+          });
+        }
+      }
+    }
+
+    // 시간대별로 정렬 (아침 -> 점심 -> 저녁)
+    todayMedications.sort((a, b) {
+      final order = {'아침': 0, '점심': 1, '저녁': 2};
+      return order[a['timeOfDay']]!.compareTo(order[b['timeOfDay']]!);
+    });
+
+    return todayMedications;
+  }
+
+  // 요일을 한국어로 변환
+  String _getKoreanWeekday(int weekday) {
+    switch (weekday) {
+      case 1:
+        return '월';
+      case 2:
+        return '화';
+      case 3:
+        return '수';
+      case 4:
+        return '목';
+      case 5:
+        return '금';
+      case 6:
+        return '토';
+      case 7:
+        return '일';
+      default:
+        return '월';
+    }
+  }
+
+  // 시간을 시간대별로 분류
+  String _getTimeOfDay(String time) {
+    final hour = int.parse(time.split(':')[0]);
+    if (hour >= 5 && hour < 11) return '아침';
+    if (hour >= 11 && hour < 17) return '점심';
+    return '저녁';
+  }
+
+  // 약 행을 만드는 메서드
+  Widget _buildMedicationRow(Map<String, dynamic> medication) {
+    final name = medication['name'];
+    final timeOfDay = medication['timeOfDay'];
+    final note = medication['note'];
+
     return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
+        border: Border(top: BorderSide(color: Colors.grey.shade200)),
+        color: Colors.white,
       ),
-      child: Column(
+      child: Row(
         children: [
-          // 테이블 헤더
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(8),
-                topRight: Radius.circular(8),
-              ),
-            ),
-            child: const Row(
+          // 약 이름과 아이콘
+          Expanded(
+            flex: 2,
+            child: Row(
               children: [
-                Expanded(child: Text('아침', textAlign: TextAlign.center)),
-                Expanded(child: Text('점심', textAlign: TextAlign.center)),
-                Expanded(child: Text('저녁', textAlign: TextAlign.center)),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.medication,
+                    size: 20,
+                    color: Colors.blue.shade600,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (note.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          note,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade700,
+                            fontWeight: FontWeight.w400,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
-
-          // A약 행
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: Colors.grey.shade300)),
-            ),
-            child: const Row(
+          const SizedBox(width: 16),
+          // 시간대별 표시
+          Expanded(
+            flex: 3,
+            child: Row(
               children: [
-                Expanded(
-                  child: Text(
-                    'A약',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Expanded(child: Text('식전 30분', textAlign: TextAlign.center)),
-                Expanded(child: Text('', textAlign: TextAlign.center)),
-                Expanded(child: Text('식전 30분', textAlign: TextAlign.center)),
-              ],
-            ),
-          ),
-
-          // B약 행
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: Colors.grey.shade300)),
-            ),
-            child: const Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'B약',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Expanded(child: Text('식후 30분', textAlign: TextAlign.center)),
-                Expanded(child: Text('식후 30분', textAlign: TextAlign.center)),
-                Expanded(child: Text('식후 30분', textAlign: TextAlign.center)),
+                _buildTimeSlot('아침', timeOfDay == '아침', Colors.orange),
+                const SizedBox(width: 8),
+                _buildTimeSlot('점심', timeOfDay == '점심', Colors.green),
+                const SizedBox(width: 8),
+                _buildTimeSlot('저녁', timeOfDay == '저녁', Colors.purple),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  // 시간대별 슬롯을 만드는 메서드
+  Widget _buildTimeSlot(String timeLabel, bool isActive, Color activeColor) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        decoration: BoxDecoration(
+          color: isActive ? activeColor.withOpacity(0.1) : Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color:
+                isActive ? activeColor.withOpacity(0.3) : Colors.grey.shade200,
+            width: 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              isActive ? Icons.check_circle : Icons.circle_outlined,
+              size: 16,
+              color: isActive ? activeColor : Colors.grey.shade400,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              timeLabel,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                color: isActive ? activeColor : Colors.grey.shade500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 헤더용 시간대 슬롯을 만드는 메서드
+  Widget _buildHeaderTimeSlot(String timeLabel, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: color.withOpacity(0.3), width: 1),
+        ),
+        child: Column(
+          children: [
+            Icon(_getTimeIcon(timeLabel), size: 14, color: color),
+            const SizedBox(height: 2),
+            Text(
+              timeLabel,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 시간대별 아이콘을 반환하는 메서드
+  IconData _getTimeIcon(String timeLabel) {
+    switch (timeLabel) {
+      case '아침':
+        return Icons.wb_sunny;
+      case '점심':
+        return Icons.restaurant;
+      case '저녁':
+        return Icons.nights_stay;
+      default:
+        return Icons.access_time;
+    }
+  }
+
+  Widget _buildMedicationSchedule() {
+    return Consumer<ReminderProvider>(
+      builder: (context, reminderProvider, child) {
+        final todayMedications = _getTodayMedications(
+          reminderProvider.reminders,
+        );
+
+        if (todayMedications.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.medication_outlined,
+                  size: 48,
+                  color: Colors.grey.shade400,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '오늘 복용할 약이 없습니다',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '복약 알림을 설정해보세요!',
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            children: [
+              // 테이블 헤더
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.blue.shade50, Colors.blue.shade100],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(8),
+                    topRight: Radius.circular(8),
+                  ),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.medication,
+                            size: 20,
+                            color: Colors.blue.shade700,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '약 이름',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: Colors.blue.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 3,
+                      child: Row(
+                        children: [
+                          _buildHeaderTimeSlot('아침', Colors.orange),
+                          const SizedBox(width: 8),
+                          _buildHeaderTimeSlot('점심', Colors.green),
+                          const SizedBox(width: 8),
+                          _buildHeaderTimeSlot('저녁', Colors.purple),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // 오늘의 약들 표시
+              ...todayMedications.map(
+                (medication) => _buildMedicationRow(medication),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -1308,9 +1575,39 @@ class _MedicationScreenState extends State<MedicationScreen> {
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 16),
-              Text(
-                '• A약 (아침, 저녁)\n• B약 (아침, 점심, 저녁)',
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+              Consumer<ReminderProvider>(
+                builder: (context, reminderProvider, child) {
+                  final todayMedications = _getTodayMedications(
+                    reminderProvider.reminders,
+                  );
+
+                  if (todayMedications.isEmpty) {
+                    return Text(
+                      '오늘 복용할 약이 없습니다',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade700,
+                      ),
+                    );
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children:
+                        todayMedications.map((medication) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 4.0),
+                            child: Text(
+                              '• ${medication['name']} (${medication['time']})',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                  );
+                },
               ),
               const SizedBox(height: 16),
               Container(
