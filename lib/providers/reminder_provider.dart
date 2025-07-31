@@ -1,20 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 class ReminderProvider with ChangeNotifier {
-  List<Map<String, dynamic>> _reminders = [
-    {
-      'id': 1,
-      'text': '매일 14시 C약 알림',
-      'time': '14:00',
-      'days': ['월', '화', '수', '목', '금', '토', '일'],
-    },
-    {
-      'id': 2,
-      'text': '월수금 14시, 20시 D약 알림',
-      'time': '14:00, 20:00',
-      'days': ['월', '수', '금'],
-    },
-  ];
+  List<Map<String, dynamic>> _reminders = [];
 
   List<Map<String, dynamic>> get reminders => _reminders;
 
