@@ -246,13 +246,31 @@ class _HomeScreenState extends State<HomeScreen> {
                                 border: InputBorder.none,
                               ),
                               style: const TextStyle(fontSize: 18),
+                              onSubmitted: (value) {
+                                if (value.trim().isNotEmpty) {
+                                  context.push(
+                                    '/medication-search-result',
+                                    extra: value.trim(),
+                                  );
+                                }
+                              },
                             ),
                           ),
                           const SizedBox(width: 20),
-                          Icon(
-                            Icons.search,
-                            size: 40,
-                            color: Color(0xFF174D4D),
+                          GestureDetector(
+                            onTap: () {
+                              if (_searchController.text.trim().isNotEmpty) {
+                                context.push(
+                                  '/medication-search-result',
+                                  extra: _searchController.text.trim(),
+                                );
+                              }
+                            },
+                            child: Icon(
+                              Icons.search,
+                              size: 40,
+                              color: Color(0xFF174D4D),
+                            ),
                           ),
                         ],
                       ),

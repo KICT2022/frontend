@@ -17,6 +17,7 @@ import 'screens/medication_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/notification_screen.dart';
+import 'screens/medication_search_result_screen.dart';
 import 'utils/notification_service.dart';
 
 void main() async {
@@ -126,6 +127,13 @@ class MyApp extends StatelessWidget {
         GoRoute(
           path: '/notifications',
           builder: (context, state) => const NotificationScreen(),
+        ),
+        GoRoute(
+          path: '/medication-search-result',
+          builder: (context, state) {
+            final searchQuery = state.extra as String;
+            return MedicationSearchResultScreen(searchQuery: searchQuery);
+          },
         ),
       ],
     );
