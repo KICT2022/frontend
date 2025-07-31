@@ -5,8 +5,8 @@ class NotificationProvider extends ChangeNotifier {
   bool _isSeniorMode = false;
   bool _isVoiceEnabled = false;
   String _language = 'ko';
-  List<Map<String, dynamic>> _notifications = [];
-  bool _isLoading = false;
+  final List<Map<String, dynamic>> _notifications = [];
+  final bool _isLoading = false;
 
   bool get isSeniorMode => _isSeniorMode;
   bool get isVoiceEnabled => _isVoiceEnabled;
@@ -82,12 +82,7 @@ class NotificationProvider extends ChangeNotifier {
   // 테스트용 알림 추가 메서드
   void addTestNotification() {
     final types = ['medication', 'reminder', 'warning', 'info'];
-    final titles = [
-      '복약 시간 알림',
-      '약물 상호작용 경고',
-      '복용률 달성 축하',
-      '새로운 약물 정보',
-    ];
+    final titles = ['복약 시간 알림', '약물 상호작용 경고', '복용률 달성 축하', '새로운 약물 정보'];
     final messages = [
       '아침 약을 복용할 시간입니다.',
       '새로 처방받은 약과 기존 약물 간 상호작용이 있을 수 있습니다.',
@@ -103,4 +98,4 @@ class NotificationProvider extends ChangeNotifier {
       type: types[random],
     );
   }
-} 
+}
