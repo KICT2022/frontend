@@ -19,6 +19,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   late TextEditingController _guardianNameController;
   late TextEditingController _guardianPhoneController;
   late TextEditingController _guardianRelationshipController;
+  late TextEditingController _customMedicalHistoryController;
+  late TextEditingController _customMedicationController;
 
   String _selectedGender = '남성';
   DateTime _selectedDate = DateTime.now().subtract(
@@ -85,6 +87,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         _guardianPhoneController = TextEditingController();
         _guardianRelationshipController = TextEditingController();
       }
+      _customMedicalHistoryController = TextEditingController();
+      _customMedicationController = TextEditingController();
     } else {
       _nameController = TextEditingController();
       _phoneController = TextEditingController();
@@ -92,6 +96,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       _guardianNameController = TextEditingController();
       _guardianPhoneController = TextEditingController();
       _guardianRelationshipController = TextEditingController();
+      _customMedicalHistoryController = TextEditingController();
+      _customMedicationController = TextEditingController();
     }
   }
 
@@ -103,6 +109,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     _guardianNameController.dispose();
     _guardianPhoneController.dispose();
     _guardianRelationshipController.dispose();
+    _customMedicalHistoryController.dispose();
+    _customMedicationController.dispose();
     super.dispose();
   }
 
@@ -280,6 +288,35 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                     });
                   },
                 ),
+                _buildCustomInputField(
+                  controller: _customMedicalHistoryController,
+                  label: '직접 입력',
+                  hintText: '추가 병력을 입력하세요',
+                  onAdd: () {
+                    if (_customMedicalHistoryController.text
+                        .trim()
+                        .isNotEmpty) {
+                      setState(() {
+                        _selectedMedicalHistory.add(
+                          _customMedicalHistoryController.text.trim(),
+                        );
+                        _customMedicalHistoryController.clear();
+                      });
+                    }
+                  },
+                ),
+                _buildSelectedItemsDisplay('선택된 병력', _selectedMedicalHistory, (
+                  item,
+                ) {
+                  setState(() {
+                    _selectedMedicalHistory.remove(item);
+                  });
+                }),
+              ]),
+              const SizedBox(height: 20),
+
+              // 복용중인 약 카드
+              _buildInfoCard('복용중인 약', [
                 _buildMultiSelectField(
                   label: '복용중인 약',
                   selectedItems: _selectedCurrentMedications,
@@ -287,6 +324,30 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                   onChanged: (selectedItems) {
                     setState(() {
                       _selectedCurrentMedications = selectedItems;
+                    });
+                  },
+                ),
+                _buildCustomInputField(
+                  controller: _customMedicationController,
+                  label: '직접 입력',
+                  hintText: '추가 약을 입력하세요',
+                  onAdd: () {
+                    if (_customMedicationController.text.trim().isNotEmpty) {
+                      setState(() {
+                        _selectedCurrentMedications.add(
+                          _customMedicationController.text.trim(),
+                        );
+                        _customMedicationController.clear();
+                      });
+                    }
+                  },
+                ),
+                _buildSelectedItemsDisplay(
+                  '선택된 약',
+                  _selectedCurrentMedications,
+                  (item) {
+                    setState(() {
+                      _selectedCurrentMedications.remove(item);
                     });
                   },
                 ),
@@ -468,6 +529,142 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                           isSelected ? const Color(0xFF174D4D) : Colors.black87,
                       fontWeight:
                           isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  );
+                }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCustomInputField({
+    required TextEditingController controller,
+    required String label,
+    required String hintText,
+    required VoidCallback onAdd,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: controller,
+                  decoration: InputDecoration(
+                    hintText: hintText,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey.shade50,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                  onFieldSubmitted: (value) {
+                    if (value.trim().isNotEmpty) {
+                      onAdd();
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: onAdd,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF174D4D),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+                child: const Text('추가'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSelectedItemsDisplay(
+    String title,
+    List<String> selectedItems,
+    Function(String) onRemove,
+  ) {
+    if (selectedItems.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children:
+                selectedItems.map((item) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF174D4D).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: const Color(0xFF174D4D).withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          item,
+                          style: const TextStyle(
+                            color: Color(0xFF174D4D),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () => onRemove(item),
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              Icons.close,
+                              size: 16,
+                              color: Colors.red.shade600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 }).toList(),
