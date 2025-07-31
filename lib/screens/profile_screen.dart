@@ -82,14 +82,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: SingleChildScrollView(
-          child: Consumer<AuthProvider>(
-            builder: (context, authProvider, child) {
-              final user = authProvider.currentUser;
-              if (user == null) return const SizedBox.shrink();
-              return Column(
+      body: Consumer<AuthProvider>(
+        builder: (context, authProvider, child) {
+          final user = authProvider.currentUser;
+          if (user == null) return const SizedBox.shrink();
+
+          return Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: SingleChildScrollView(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Card(
@@ -108,13 +109,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             color: Color(0xFF174D4D),
                           ),
                           const SizedBox(width: 20),
-                          Text(
-                            '${user.name} 님',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF174D4D),
+                          Expanded(
+                            child: Text(
+                              '${user.name} 님',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF174D4D),
+                              ),
                             ),
+                          ),
+                          IconButton(
+                            onPressed: () => context.push('/profile-edit'),
+                            icon: Icon(Icons.edit, color: Color(0xFF174D4D)),
+                            tooltip: '프로필 수정',
                           ),
                         ],
                       ),
@@ -132,19 +140,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildInfoSection('성별', user.gender),
+                          _buildInfoSection(
+                            '성별',
+                            user.gender == '남' ? '남성' : '여성',
+                          ),
                           _buildInfoSection(
                             '나이',
                             '${DateTime.now().year - user.birthDate.year}세',
                           ),
                           _buildMultiSelectSection('병력', user.medicalHistory, [
+                            '고혈압',
+                            '당뇨',
+                            '심장질환',
+                            '간질환',
+                            '신장질환',
                             '위염',
                             '편도염',
+                            '천식',
+                            '알레르기',
+                            '관절염',
                           ]),
                           _buildMultiSelectSection(
                             '복용중인 약',
                             user.currentMedications,
-                            ['A약', 'B약'],
+                            ['고혈압약', '당뇨약', '심장약', '소화제', '진통제', '항생제', '비타민'],
                           ),
                         ],
                       ),
@@ -253,10 +272,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                 ],
-              );
-            },
-          ),
-        ),
+              ),
+            ),
+          );
+        },
       ),
       bottomNavigationBar: BottomNavigation(
         currentIndex: 3,
