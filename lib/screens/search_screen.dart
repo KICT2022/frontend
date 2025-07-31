@@ -4,6 +4,7 @@ import '../providers/medication_provider.dart';
 import '../providers/notification_provider.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/bottom_navigation.dart';
+import 'medication_detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -47,6 +48,25 @@ class _SearchScreenState extends State<SearchScreen> {
   // 페이지 컨트롤러
   late PageController _pageController;
   int _currentPage = 0;
+
+  // 약물 데이터 (예시)
+  final List<Map<String, dynamic>> _medications = [
+    {
+      'name': '타이레놀',
+      'dosage': ['15세 이하 : 1알', '15세 이상 : 2알', '1일 2회'],
+      'additionalInfo': '식후 30분에 복용하시고, 알코올과 함께 복용하지 마세요.',
+    },
+    {
+      'name': '아스피린',
+      'dosage': ['성인 : 1-2알', '1일 3-4회', '식후 복용'],
+      'additionalInfo': '위장장애가 있을 수 있으니 주의하세요.',
+    },
+    {
+      'name': '이부프로펜',
+      'dosage': ['성인 : 1-2알', '1일 3-4회', '식사와 함께 복용'],
+      'additionalInfo': '위장장애가 있을 수 있으니 주의하세요.',
+    },
+  ];
 
   @override
   void initState() {
@@ -236,7 +256,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         ),
                       ),
                       child: Text(
-                        '증상입력모드',
+                        '증상입력하기',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontWeight:
@@ -278,7 +298,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         ),
                       ),
                       child: Text(
-                        '약물상호작용모드',
+                        '약물상호작용확인',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontWeight:
@@ -555,7 +575,33 @@ class _SearchScreenState extends State<SearchScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  // 나에게 맞는 약 확인 로직
+                  // 선택된 증상이 있는지 확인
+                  final medicationProvider = Provider.of<MedicationProvider>(
+                    context,
+                    listen: false,
+                  );
+
+                  if (medicationProvider.selectedSymptoms.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('증상을 먼저 선택해주세요.'),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                    return;
+                  }
+
+                  // 약물 상세 화면으로 이동
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) => MedicationDetailScreen(
+                            medications: _medications,
+                            userName: '홍길동', // 실제로는 사용자 정보에서 가져와야 함
+                          ),
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green.shade600,
