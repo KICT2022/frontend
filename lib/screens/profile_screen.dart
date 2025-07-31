@@ -148,22 +148,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             '나이',
                             '${DateTime.now().year - user.birthDate.year}세',
                           ),
-                          _buildMultiSelectSection('병력', user.medicalHistory, [
-                            '고혈압',
-                            '당뇨',
-                            '심장질환',
-                            '간질환',
-                            '신장질환',
-                            '위염',
-                            '편도염',
-                            '천식',
-                            '알레르기',
-                            '관절염',
-                          ]),
-                          _buildMultiSelectSection(
+                          _buildSelectedItemsSection('병력', user.medicalHistory),
+                          _buildSelectedItemsSection(
                             '복용중인 약',
                             user.currentMedications,
-                            ['고혈압약', '당뇨약', '심장약', '소화제', '진통제', '항생제', '비타민'],
                           ),
                         ],
                       ),
@@ -319,11 +307,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildMultiSelectSection(
-    String label,
-    List<String> selectedItems,
-    List<String> options,
-  ) {
+  Widget _buildSelectedItemsSection(String label, List<String> selectedItems) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
@@ -331,20 +315,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           Text('$label: ', style: const TextStyle(fontSize: 16)),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children:
-                options.map((option) {
-                  final isSelected = selectedItems.contains(option);
-                  return ChoiceChip(
-                    label: Text(option),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      // 실제 구현에서는 Provider를 통해 상태 업데이트
-                    },
-                  );
-                }).toList(),
-          ),
+          if (selectedItems.isEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                '없음',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+              ),
+            )
+          else
+            Wrap(
+              spacing: 8,
+              children:
+                  selectedItems.map((item) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF174D4D).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: const Color(0xFF174D4D).withOpacity(0.3),
+                        ),
+                      ),
+                      child: Text(
+                        item,
+                        style: const TextStyle(
+                          color: Color(0xFF174D4D),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+            ),
         ],
       ),
     );
