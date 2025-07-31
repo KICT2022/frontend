@@ -199,7 +199,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
                           ),
                           const SizedBox(width: 12),
                           Text(
-                            '주간 복용 달성률',
+                            '월간 복용 달성률',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -208,15 +208,9 @@ class _MedicationScreenState extends State<MedicationScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      // 주간 달성률 위젯
-                      _buildAchievementItem('월', 85, false, 14),
-                      _buildAchievementItem('화', 92, false, 14),
-                      _buildAchievementItem('수', 78, false, 14),
-                      _buildAchievementItem('목', 95, false, 14),
-                      _buildAchievementItem('금', 88, false, 14),
-                      _buildAchievementItem('토', 90, false, 14),
-                      _buildAchievementItem('일', 82, false, 14),
+                      const SizedBox(height: 16),
+                      // 월간 달성률 스탬프 그리드
+                      _buildMonthlyAchievementGrid(),
                     ],
                   ),
                 ),
@@ -1097,53 +1091,249 @@ class _MedicationScreenState extends State<MedicationScreen> {
     );
   }
 
+  Widget _buildMonthlyAchievementGrid() {
+    // 현재 월의 날짜 정보 계산
+    final now = DateTime.now();
+    final currentYear = now.year;
+    final currentMonth = now.month;
+    final currentDay = now.day;
+
+    // 현재 월의 첫 번째 날짜와 마지막 날짜
+    final firstDayOfMonth = DateTime(currentYear, currentMonth, 1);
+    final lastDayOfMonth = DateTime(currentYear, currentMonth + 1, 0);
+
+    // 첫 번째 날짜의 요일 (0: 일요일, 1: 월요일, ..., 6: 토요일)
+    final firstDayWeekday = firstDayOfMonth.weekday % 7; // 일요일을 0으로 변환
+    final daysInMonth = lastDayOfMonth.day;
+
+    // 샘플 데이터 (실제로는 데이터베이스에서 가져와야 함)
+    List<int> dailyPercentages = List.generate(daysInMonth, (index) {
+      // 랜덤한 달성률 생성 (실제 구현에서는 실제 데이터 사용)
+      return 60 + (index * 2) % 40; // 60-99% 범위
+    });
+
+    // 전체 주 수 계산 (첫 주의 빈 칸 + 날짜 수)
+    final totalWeeks = ((firstDayWeekday + daysInMonth) / 7).ceil();
+
+    return Column(
+      children: [
+        // 월 표시
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: Text(
+            '${currentYear}년 ${currentMonth}월',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF174D4D),
+            ),
+          ),
+        ),
+        // 요일 헤더
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children:
+              ['일', '월', '화', '수', '목', '금', '토'].map((day) {
+                return SizedBox(
+                  width: 35.0,
+                  child: Text(
+                    day,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF174D4D),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                );
+              }).toList(),
+        ),
+        const SizedBox(height: 8),
+        // 날짜 그리드
+        ...List.generate(totalWeeks, (weekIndex) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: List.generate(7, (dayIndex) {
+                final gridIndex = weekIndex * 7 + dayIndex;
+
+                // 첫 주의 빈 칸들
+                if (gridIndex < firstDayWeekday) {
+                  return const SizedBox(width: 35.0, height: 35.0);
+                }
+
+                // 월의 날짜 범위를 벗어나는 경우
+                final dayNumber = gridIndex - firstDayWeekday + 1;
+                if (dayNumber > daysInMonth) {
+                  return const SizedBox(width: 35.0, height: 35.0);
+                }
+
+                final percentage = dailyPercentages[dayNumber - 1];
+                final isToday = dayNumber == currentDay;
+
+                return _buildDailyAchievementItem(
+                  dayNumber,
+                  percentage,
+                  isToday,
+                );
+              }),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildDailyAchievementItem(
+    int day,
+    int percentage, [
+    bool isToday = false,
+  ]) {
+    // 80% 이상이면 완료로 간주
+    bool isCompleted = percentage >= 80;
+
+    return GestureDetector(
+      onTap: () {
+        // 스탬프 클릭 시 상세 정보 표시 (선택사항)
+      },
+      child: Container(
+        width: 35.0,
+        height: 35.0,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color:
+              isToday
+                  ? Colors.blue.shade300
+                  : (isCompleted
+                      ? Colors.green.shade400
+                      : Colors.grey.shade200),
+          border: Border.all(
+            color:
+                isToday
+                    ? Colors.blue.shade600
+                    : (isCompleted
+                        ? Colors.green.shade600
+                        : Colors.grey.shade400),
+            width: isToday ? 2.0 : 1.5,
+          ),
+          boxShadow:
+              isToday || isCompleted
+                  ? [
+                    BoxShadow(
+                      color:
+                          isToday
+                              ? Colors.blue.shade200
+                              : Colors.green.shade200,
+                      blurRadius: isToday ? 6 : 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ]
+                  : null,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isCompleted) ...[
+              Icon(Icons.check_circle, size: 16.0, color: Colors.white),
+            ] else ...[
+              Text(
+                '$day',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: isToday ? Colors.white : Colors.grey.shade700,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildAchievementItem(
     String day,
     int percentage,
     bool isSeniorMode,
     double fontSize,
   ) {
+    // 80% 이상이면 완료로 간주
+    bool isCompleted = percentage >= 80;
+
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: isSeniorMode ? 4.0 : 3.0),
-      child: Row(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Column(
         children: [
-          SizedBox(
-            width: isSeniorMode ? 32.0 : 28.0,
-            child: Text(
-              day,
-              style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w500),
+          Text(
+            day,
+            style: TextStyle(
+              fontSize: fontSize - 2,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF174D4D),
             ),
           ),
-          Expanded(
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () {
+              // 스탬프 클릭 시 상세 정보 표시 (선택사항)
+            },
             child: Container(
-              height: isSeniorMode ? 10.0 : 8.0,
+              width: 45.0,
+              height: 45.0,
               decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(isSeniorMode ? 5.0 : 4.0),
-              ),
-              child: FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: percentage / 100,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade400,
-                    borderRadius: BorderRadius.circular(
-                      isSeniorMode ? 5.0 : 4.0,
-                    ),
-                  ),
+                shape: BoxShape.circle,
+                color:
+                    isCompleted ? Colors.green.shade400 : Colors.grey.shade200,
+                border: Border.all(
+                  color:
+                      isCompleted
+                          ? Colors.green.shade600
+                          : Colors.grey.shade400,
+                  width: 2,
                 ),
+                boxShadow:
+                    isCompleted
+                        ? [
+                          BoxShadow(
+                            color: Colors.green.shade200,
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                        : null,
               ),
-            ),
-          ),
-          SizedBox(width: isSeniorMode ? 10.0 : 8.0),
-          SizedBox(
-            width: isSeniorMode ? 32.0 : 28.0,
-            child: Text(
-              '$percentage%',
-              style: TextStyle(
-                fontSize: fontSize,
-                fontWeight: FontWeight.w600,
-                color: Colors.green.shade600,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (isCompleted) ...[
+                    Icon(Icons.check_circle, size: 20.0, color: Colors.white),
+                    const SizedBox(height: 2),
+                    Text(
+                      '완료',
+                      style: TextStyle(
+                        fontSize: fontSize - 4,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ] else ...[
+                    Icon(
+                      Icons.medication,
+                      size: 18.0,
+                      color: Colors.grey.shade600,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$percentage%',
+                      style: TextStyle(
+                        fontSize: fontSize - 4,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
