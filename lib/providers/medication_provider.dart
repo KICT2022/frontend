@@ -5,7 +5,7 @@ class MedicationProvider extends ChangeNotifier {
   List<Medication> _medications = [];
   List<MedicationSchedule> _schedules = [];
   List<MedicationReminder> _reminders = [];
-  List<String> _selectedSymptoms = [];
+  final List<String> _selectedSymptoms = [];
   bool _isLoading = false;
 
   List<Medication> get medications => _medications;
@@ -84,7 +84,7 @@ class MedicationProvider extends ChangeNotifier {
 
   Future<void> loadMedications() async {
     if (_medications.isNotEmpty) return; // 이미 로드된 경우 스킵
-    
+
     _isLoading = true;
     notifyListeners();
 
@@ -103,22 +103,30 @@ class MedicationProvider extends ChangeNotifier {
 
   Future<List<Medication>> searchMedications(String query) async {
     if (query.isEmpty) return [];
-    
-    return _medications.where((med) =>
-        med.name.toLowerCase().contains(query.toLowerCase()) ||
-        med.description.toLowerCase().contains(query.toLowerCase())
-    ).toList();
+
+    return _medications
+        .where(
+          (med) =>
+              med.name.toLowerCase().contains(query.toLowerCase()) ||
+              med.description.toLowerCase().contains(query.toLowerCase()),
+        )
+        .toList();
   }
 
-  Future<List<Medication>> getMedicationsBySymptoms(List<String> symptoms) async {
+  Future<List<Medication>> getMedicationsBySymptoms(
+    List<String> symptoms,
+  ) async {
     // 실제 구현에서는 AI 기반 약물 추천
     return _medications.take(3).toList();
   }
 
-  Future<Map<String, dynamic>> checkDrugInteraction(String medication1, String medication2) async {
+  Future<Map<String, dynamic>> checkDrugInteraction(
+    String medication1,
+    String medication2,
+  ) async {
     // 실제 구현에서는 약물 상호작용 API 호출
     await Future.delayed(const Duration(seconds: 1));
-    
+
     return {
       'canTakeTogether': true,
       'interval': '1시간',
@@ -127,10 +135,7 @@ class MedicationProvider extends ChangeNotifier {
         'name': '타이레놀',
         'dosage': '15세 이하: 1알, 15세 이상: 2알, 1일 2회',
       },
-      'medication2': {
-        'name': '화이투벤',
-        'dosage': '1회 1포, 1일 3회',
-      },
+      'medication2': {'name': '화이투벤', 'dosage': '1회 1포, 1일 3회'},
     };
   }
 
@@ -189,15 +194,21 @@ class MedicationProvider extends ChangeNotifier {
 
   List<MedicationSchedule> getTodaySchedules() {
     final today = DateTime.now().weekday;
-    return _schedules.where((schedule) => 
-        schedule.daysOfWeek.contains(today) && schedule.isActive
-    ).toList();
+    return _schedules
+        .where(
+          (schedule) =>
+              schedule.daysOfWeek.contains(today) && schedule.isActive,
+        )
+        .toList();
   }
 
   List<MedicationReminder> getTodayReminders() {
     final today = DateTime.now().weekday;
-    return _reminders.where((reminder) => 
-        reminder.daysOfWeek.contains(today) && reminder.isActive
-    ).toList();
+    return _reminders
+        .where(
+          (reminder) =>
+              reminder.daysOfWeek.contains(today) && reminder.isActive,
+        )
+        .toList();
   }
-} 
+}

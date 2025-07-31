@@ -14,7 +14,7 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   bool _isSymptomInput = true;
-  List<String> _symptoms = [
+  final List<String> _symptoms = [
     '머리가 아파요',
     '허리가 아파요',
     '심장이 아파요',
@@ -624,7 +624,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         ),
                       ] else ...[
                         // 1, 2번째 약 입력칸을 위한 빈 공간
-                        Container(width: 24, height: 24),
+                        SizedBox(width: 24, height: 24),
                       ],
                       const SizedBox(width: 8),
                       Expanded(

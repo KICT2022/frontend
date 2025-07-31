@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
+import 'dart:async';
+import 'dart:math';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -17,17 +19,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _phoneController = TextEditingController();
-  
+  final _verificationCodeController = TextEditingController();
+
   final _nameFocusNode = FocusNode();
   final _emailFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
   final _confirmPasswordFocusNode = FocusNode();
   final _phoneFocusNode = FocusNode();
-  
+  final _verificationCodeFocusNode = FocusNode();
+
   String _selectedGender = '남';
   DateTime _selectedDate = DateTime(2003, 12, 22);
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
+  bool _isEmailVerified = false;
+  bool _isVerificationCodeSent = false;
+  String? _verificationCode;
+  int _countdown = 0;
+  Timer? _timer;
 
   @override
   void dispose() {
@@ -36,18 +45,122 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _phoneController.dispose();
-    
+    _verificationCodeController.dispose();
+
     _nameFocusNode.dispose();
     _emailFocusNode.dispose();
     _passwordFocusNode.dispose();
     _confirmPasswordFocusNode.dispose();
     _phoneFocusNode.dispose();
-    
+    _verificationCodeFocusNode.dispose();
+
+    _timer?.cancel();
     super.dispose();
+  }
+
+  // 이메일 인증 코드 전송
+  Future<void> _sendVerificationCode() async {
+    if (_emailController.text.isEmpty || !_emailController.text.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('올바른 이메일을 입력해주세요.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isVerificationCodeSent = true;
+      _countdown = 180; // 3분 카운트다운
+    });
+
+    // 인증 코드 생성 (실제로는 서버에서 생성)
+    _verificationCode = _generateVerificationCode();
+
+    // 카운트다운 타이머 시작
+    _startCountdown();
+
+    // 실제로는 서버에 이메일 전송 요청
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('인증 코드가 ${_emailController.text}로 전송되었습니다.'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  // 인증 코드 확인
+  Future<void> _verifyCode() async {
+    if (_verificationCodeController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('인증 코드를 입력해주세요.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_verificationCodeController.text == _verificationCode) {
+      setState(() {
+        _isEmailVerified = true;
+      });
+      _timer?.cancel();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('이메일 인증이 완료되었습니다.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('인증 코드가 일치하지 않습니다.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // 인증 코드 생성 (6자리 숫자)
+  String _generateVerificationCode() {
+    return (100000 + Random().nextInt(900000)).toString();
+  }
+
+  // 카운트다운 타이머 시작
+  void _startCountdown() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        if (_countdown > 0) {
+          _countdown--;
+        } else {
+          timer.cancel();
+          _isVerificationCodeSent = false;
+        }
+      });
+    });
+  }
+
+  // 인증 코드 재전송
+  void _resendVerificationCode() {
+    _sendVerificationCode();
   }
 
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (!_isEmailVerified) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('이메일 인증을 완료해주세요.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final success = await authProvider.register(
@@ -94,6 +207,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/'),
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -113,7 +230,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         decoration: BoxDecoration(
                           color: Colors.blue.shade50,
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.blue.shade200, width: 2),
+                          border: Border.all(
+                            color: Colors.blue.shade200,
+                            width: 2,
+                          ),
                         ),
                         child: Icon(
                           Icons.medication,
@@ -151,10 +271,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   onFieldSubmitted: (_) {
                     _phoneFocusNode.requestFocus();
                   },
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: '이름',
-                    prefixIcon: Icon(Icons.person),
+                    prefixIcon: const Icon(Icons.person),
                     hintText: '홍길동',
+                    errorStyle: const TextStyle(fontSize: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: Colors.blue.shade400,
+                        width: 2,
+                      ),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.red, width: 2),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.red, width: 2),
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -229,14 +368,46 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   onFieldSubmitted: (_) {
                     _emailFocusNode.requestFocus();
                   },
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: '전화번호',
-                    prefixIcon: Icon(Icons.phone),
-                    hintText: '010-0000-0000',
+                    prefixIcon: const Icon(Icons.phone),
+                    hintText: '01012345678 (하이픈 제외)',
+                    errorStyle: const TextStyle(fontSize: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: Colors.blue.shade400,
+                        width: 2,
+                      ),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.red, width: 2),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.red, width: 2),
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return '전화번호를 입력해주세요.';
+                    }
+                    // 하이픈 제거
+                    final cleanNumber = value.replaceAll('-', '');
+                    if (cleanNumber.length != 11) {
+                      return '전화번호는 11자리여야 합니다.';
+                    }
+                    if (!cleanNumber.startsWith('010') &&
+                        !cleanNumber.startsWith('011') &&
+                        !cleanNumber.startsWith('016') &&
+                        !cleanNumber.startsWith('017') &&
+                        !cleanNumber.startsWith('018') &&
+                        !cleanNumber.startsWith('019')) {
+                      return '올바른 휴대폰 번호를 입력해주세요.';
                     }
                     return null;
                   },
@@ -252,22 +423,162 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   onFieldSubmitted: (_) {
                     _passwordFocusNode.requestFocus();
                   },
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'E-mail',
-                    prefixIcon: Icon(Icons.email),
-                    hintText: 'example@email.com',
+                    prefixIcon: const Icon(Icons.email),
+                    hintText: 'example@gmail.com',
+                    errorStyle: const TextStyle(fontSize: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: Colors.blue.shade400,
+                        width: 2,
+                      ),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.red, width: 2),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.red, width: 2),
+                    ),
+                    suffixIcon:
+                        _isEmailVerified
+                            ? const Icon(
+                              Icons.check_circle,
+                              color: Colors.green,
+                            )
+                            : TextButton(
+                              onPressed:
+                                  _isVerificationCodeSent && _countdown > 0
+                                      ? null
+                                      : _sendVerificationCode,
+                              child: Text(
+                                _isVerificationCodeSent && _countdown > 0
+                                    ? '${(_countdown ~/ 60).toString().padLeft(2, '0')}:${(_countdown % 60).toString().padLeft(2, '0')}'
+                                    : '인증',
+                                style: TextStyle(
+                                  color:
+                                      _isVerificationCodeSent && _countdown > 0
+                                          ? Colors.grey
+                                          : Colors.blue,
+                                ),
+                              ),
+                            ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return '이메일을 입력해주세요.';
                     }
-                    if (!value.contains('@')) {
+                    // 이메일 형식 검증 (정규식 사용)
+                    final emailRegex = RegExp(
+                      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+                    );
+                    if (!emailRegex.hasMatch(value)) {
                       return '올바른 이메일 형식을 입력해주세요.';
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 20),
+
+                // 인증 코드 입력 (인증 코드가 전송된 경우에만 표시)
+                if (_isVerificationCodeSent)
+                  Column(
+                    children: [
+                      TextFormField(
+                        controller: _verificationCodeController,
+                        focusNode: _verificationCodeFocusNode,
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.next,
+                        onFieldSubmitted: (_) {
+                          _passwordFocusNode.requestFocus();
+                        },
+                        decoration: InputDecoration(
+                          labelText: '인증 코드',
+                          prefixIcon: const Icon(Icons.security),
+                          hintText: '6자리 숫자 입력',
+                          errorStyle: const TextStyle(fontSize: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: Colors.blue.shade400,
+                              width: 2,
+                            ),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Colors.red,
+                              width: 2,
+                            ),
+                          ),
+                          focusedErrorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Colors.red,
+                              width: 2,
+                            ),
+                          ),
+                          suffixIcon: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_countdown > 0)
+                                Text(
+                                  '${(_countdown ~/ 60).toString().padLeft(2, '0')}:${(_countdown % 60).toString().padLeft(2, '0')}',
+                                  style: const TextStyle(
+                                    color: Colors.red,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              const SizedBox(width: 8),
+                              TextButton(
+                                onPressed:
+                                    _countdown > 0
+                                        ? null
+                                        : _resendVerificationCode,
+                                child: Text(
+                                  _countdown > 0 ? '재전송' : '재전송',
+                                  style: TextStyle(
+                                    color:
+                                        _countdown > 0
+                                            ? Colors.grey
+                                            : Colors.blue,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                onPressed: _verifyCode,
+                                icon: const Icon(
+                                  Icons.check,
+                                  color: Colors.green,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return '인증 코드를 입력해주세요.';
+                          }
+                          if (value.length != 6) {
+                            return '6자리 숫자를 입력해주세요.';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
 
                 // 비밀번호 입력
                 TextFormField(
@@ -283,7 +594,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     prefixIcon: const Icon(Icons.lock),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                        _isPasswordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() {
@@ -291,14 +604,41 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         });
                       },
                     ),
-                    hintText: '6자 이상 입력해주세요',
+                    hintText: '영문+숫자 포함 8자 이상',
+                    errorStyle: const TextStyle(fontSize: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: Colors.blue.shade400,
+                        width: 2,
+                      ),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.red, width: 2),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.red, width: 2),
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return '비밀번호를 입력해주세요.';
                     }
-                    if (value.length < 6) {
-                      return '비밀번호는 6자 이상이어야 합니다.';
+                    if (value.length < 8) {
+                      return '비밀번호는 8자 이상이어야 합니다.';
+                    }
+                    // 영문 포함 여부 확인
+                    if (!RegExp(r'[a-zA-Z]').hasMatch(value)) {
+                      return '영문을 포함해야 합니다.';
+                    }
+                    // 숫자 포함 여부 확인
+                    if (!RegExp(r'[0-9]').hasMatch(value)) {
+                      return '숫자를 포함해야 합니다.';
                     }
                     return null;
                   },
@@ -317,15 +657,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _isConfirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                        _isConfirmPasswordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() {
-                          _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                          _isConfirmPasswordVisible =
+                              !_isConfirmPasswordVisible;
                         });
                       },
                     ),
                     hintText: '비밀번호를 다시 입력해주세요',
+                    errorStyle: const TextStyle(fontSize: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: Colors.blue.shade400,
+                        width: 2,
+                      ),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.red, width: 2),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.red, width: 2),
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -347,16 +709,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       height: 56,
                       child: ElevatedButton(
                         onPressed: authProvider.isLoading ? null : _register,
-                        child: authProvider.isLoading
-                            ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(color: Colors.white),
-                              )
-                            : const Text(
-                                '회원가입',
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                              ),
+                        child:
+                            authProvider.isLoading
+                                ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                  ),
+                                )
+                                : const Text(
+                                  '회원가입',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                       ),
                     );
                   },
@@ -369,4 +737,4 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
     );
   }
-} 
+}
