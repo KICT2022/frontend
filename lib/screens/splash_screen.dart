@@ -30,15 +30,25 @@ class _SplashScreenState extends State<SplashScreen> {
       await authProvider.checkLoginStatus();
 
       // 앱이 처음 실행되는지 확인
-      final prefs = await SharedPreferences.getInstance();
-      final isFirstLaunch = prefs.getBool('is_first_launch') ?? true;
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final isFirstLaunch = prefs.getBool('is_first_launch') ?? true;
 
-      // 알림 권한 요청 (새 사용자에게만)
-      await NotificationService.initialize(requestPermissions: isFirstLaunch);
+        // 알림 권한 요청 (새 사용자에게만)
+        try {
+          await NotificationService.initialize(
+            requestPermissions: isFirstLaunch,
+          );
+        } catch (e) {
+          print('스플래시 화면에서 알림 서비스 초기화 실패: $e');
+        }
 
-      // 첫 실행이었다면 플래그를 false로 설정
-      if (isFirstLaunch) {
-        await prefs.setBool('is_first_launch', false);
+        // 첫 실행이었다면 플래그를 false로 설정
+        if (isFirstLaunch) {
+          await prefs.setBool('is_first_launch', false);
+        }
+      } catch (e) {
+        print('SharedPreferences 초기화 실패: $e');
       }
 
       if (mounted) {

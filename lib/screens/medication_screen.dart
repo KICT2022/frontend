@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/notification_provider.dart';
 import '../providers/reminder_provider.dart';
-import '../utils/notification_service.dart';
 
 import '../widgets/bottom_navigation.dart';
 
@@ -244,42 +243,6 @@ class _MedicationScreenState extends State<MedicationScreen> {
         },
       ),
     );
-  }
-
-  // 오늘 복용해야 하는 약들을 가져오는 메서드
-  List<Map<String, dynamic>> _getTodayMedications(
-    List<Map<String, dynamic>> reminders,
-  ) {
-    final now = DateTime.now();
-    final today = now.weekday; // 1: 월요일, 2: 화요일, ..., 7: 일요일
-    final todayKorean = _getKoreanWeekday(today);
-
-    List<Map<String, dynamic>> todayMedications = [];
-
-    for (final reminder in reminders) {
-      final days = List<String>.from(reminder['days']);
-      if (days.contains(todayKorean)) {
-        // 시간별로 약을 분류
-        final times = reminder['time'].split(', ');
-        for (final time in times) {
-          final timeOfDay = _getTimeOfDay(time);
-          todayMedications.add({
-            'name': reminder['text'].split(' • ')[0], // 약 이름
-            'time': time,
-            'timeOfDay': timeOfDay,
-            'note': reminder['note'] ?? '',
-          });
-        }
-      }
-    }
-
-    // 시간대별로 정렬 (아침 -> 점심 -> 저녁)
-    todayMedications.sort((a, b) {
-      final order = {'아침': 0, '점심': 1, '저녁': 2};
-      return order[a['timeOfDay']]!.compareTo(order[b['timeOfDay']]!);
-    });
-
-    return todayMedications;
   }
 
   // 요일을 한국어로 변환
@@ -845,7 +808,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
           builder: (context, setState) {
             return AlertDialog(
               title: Text(
-                isEditing ? '알림 수정하기' : '알림 추가하기',
+                isEditing ? '일정 수정하기' : '일정 추가하기',
                 style: TextStyle(
                   color: Color(0xFF174D4D),
                   fontWeight: FontWeight.bold,
@@ -913,75 +876,48 @@ class _MedicationScreenState extends State<MedicationScreen> {
                                   // 시간 선택
                                   Expanded(
                                     child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
+                                      height: 80,
                                       decoration: BoxDecoration(
                                         border: Border.all(
                                           color: Colors.grey.shade300,
                                         ),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            '${time.hour.toString().padLeft(2, '0')}',
-                                            style: TextStyle(fontSize: 14),
-                                          ),
-                                          Column(
-                                            children: [
-                                              IconButton(
-                                                icon: Icon(
-                                                  Icons.keyboard_arrow_up,
-                                                  size: 16,
-                                                ),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    int newHour = time.hour + 1;
-                                                    if (newHour > 23)
-                                                      newHour = 0;
-                                                    selectedTimes[index] =
-                                                        TimeOfDay(
-                                                          hour: newHour,
-                                                          minute: time.minute,
-                                                        );
-                                                  });
-                                                },
-                                                padding: EdgeInsets.zero,
-                                                constraints: BoxConstraints(
-                                                  minWidth: 24,
-                                                  minHeight: 24,
-                                                ),
-                                              ),
-                                              IconButton(
-                                                icon: Icon(
-                                                  Icons.keyboard_arrow_down,
-                                                  size: 16,
-                                                ),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    int newHour = time.hour - 1;
-                                                    if (newHour < 0)
-                                                      newHour = 23;
-                                                    selectedTimes[index] =
-                                                        TimeOfDay(
-                                                          hour: newHour,
-                                                          minute: time.minute,
-                                                        );
-                                                  });
-                                                },
-                                                padding: EdgeInsets.zero,
-                                                constraints: BoxConstraints(
-                                                  minWidth: 24,
-                                                  minHeight: 24,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
+                                      child: ListWheelScrollView.useDelegate(
+                                        itemExtent: 40,
+                                        physics: FixedExtentScrollPhysics(),
+                                        controller: FixedExtentScrollController(
+                                          initialItem: time.hour,
+                                        ),
+                                        onSelectedItemChanged: (value) {
+                                          setState(() {
+                                            selectedTimes[index] = TimeOfDay(
+                                              hour: value,
+                                              minute: time.minute,
+                                            );
+                                          });
+                                        },
+                                        childDelegate:
+                                            ListWheelChildBuilderDelegate(
+                                              builder: (context, index) {
+                                                if (index < 0 || index > 23)
+                                                  return null;
+                                                return Center(
+                                                  child: Text(
+                                                    index.toString().padLeft(
+                                                      2,
+                                                      '0',
+                                                    ),
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                              childCount: 24,
+                                            ),
                                       ),
                                     ),
                                   ),
@@ -1000,77 +936,48 @@ class _MedicationScreenState extends State<MedicationScreen> {
                                   // 분 선택
                                   Expanded(
                                     child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
+                                      height: 80,
                                       decoration: BoxDecoration(
                                         border: Border.all(
                                           color: Colors.grey.shade300,
                                         ),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            '${time.minute.toString().padLeft(2, '0')}',
-                                            style: TextStyle(fontSize: 14),
-                                          ),
-                                          Column(
-                                            children: [
-                                              IconButton(
-                                                icon: Icon(
-                                                  Icons.keyboard_arrow_up,
-                                                  size: 16,
-                                                ),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    int newMinute =
-                                                        time.minute + 5;
-                                                    if (newMinute >= 60)
-                                                      newMinute = 0;
-                                                    selectedTimes[index] =
-                                                        TimeOfDay(
-                                                          hour: time.hour,
-                                                          minute: newMinute,
-                                                        );
-                                                  });
-                                                },
-                                                padding: EdgeInsets.zero,
-                                                constraints: BoxConstraints(
-                                                  minWidth: 24,
-                                                  minHeight: 24,
-                                                ),
-                                              ),
-                                              IconButton(
-                                                icon: Icon(
-                                                  Icons.keyboard_arrow_down,
-                                                  size: 16,
-                                                ),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    int newMinute =
-                                                        time.minute - 5;
-                                                    if (newMinute < 0)
-                                                      newMinute = 55;
-                                                    selectedTimes[index] =
-                                                        TimeOfDay(
-                                                          hour: time.hour,
-                                                          minute: newMinute,
-                                                        );
-                                                  });
-                                                },
-                                                padding: EdgeInsets.zero,
-                                                constraints: BoxConstraints(
-                                                  minWidth: 24,
-                                                  minHeight: 24,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
+                                      child: ListWheelScrollView.useDelegate(
+                                        itemExtent: 40,
+                                        physics: FixedExtentScrollPhysics(),
+                                        controller: FixedExtentScrollController(
+                                          initialItem: time.minute,
+                                        ),
+                                        onSelectedItemChanged: (value) {
+                                          setState(() {
+                                            selectedTimes[index] = TimeOfDay(
+                                              hour: time.hour,
+                                              minute: value,
+                                            );
+                                          });
+                                        },
+                                        childDelegate:
+                                            ListWheelChildBuilderDelegate(
+                                              builder: (context, index) {
+                                                if (index < 0 || index > 59)
+                                                  return null;
+                                                return Center(
+                                                  child: Text(
+                                                    index.toString().padLeft(
+                                                      2,
+                                                      '0',
+                                                    ),
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                              childCount: 60,
+                                            ),
                                       ),
                                     ),
                                   ),

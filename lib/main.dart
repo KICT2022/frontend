@@ -40,7 +40,11 @@ void main() async {
   await SharedPreferences.getInstance();
 
   // 알림 서비스 초기화 (권한 요청은 나중에)
-  await NotificationService.initialize(requestPermissions: false);
+  try {
+    await NotificationService.initialize(requestPermissions: false);
+  } catch (e) {
+    print('앱 시작 시 알림 서비스 초기화 실패: $e');
+  }
 
   // 성능 최적화를 위한 설정
   if (Platform.isAndroid) {
@@ -68,31 +72,47 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(
           create: (context) {
-            final provider = NotificationProvider();
-            globalNotificationProvider = provider;
-            setGlobalNotificationProvider(provider);
-            return provider;
+            try {
+              final provider = NotificationProvider();
+              globalNotificationProvider = provider;
+              setGlobalNotificationProvider(provider);
+              return provider;
+            } catch (e) {
+              print('NotificationProvider 생성 실패: $e');
+              return NotificationProvider();
+            }
           },
         ),
         ChangeNotifierProvider(
           create: (context) {
-            final provider = ReminderProvider();
-            // NotificationProvider와 연결
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              final notificationProvider = Provider.of<NotificationProvider>(
-                context,
-                listen: false,
-              );
-              provider.setNotificationCallback((title, message, type) {
-                notificationProvider.addNotification(
-                  title: title,
-                  message: message,
-                  timestamp: DateTime.now(),
-                  type: type,
-                );
+            try {
+              final provider = ReminderProvider();
+              // NotificationProvider와 연결
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                try {
+                  final notificationProvider =
+                      Provider.of<NotificationProvider>(context, listen: false);
+                  provider.setNotificationCallback((title, message, type) {
+                    try {
+                      notificationProvider.addNotification(
+                        title: title,
+                        message: message,
+                        timestamp: DateTime.now(),
+                        type: type,
+                      );
+                    } catch (e) {
+                      print('알림 추가 실패: $e');
+                    }
+                  });
+                } catch (e) {
+                  print('NotificationProvider 연결 실패: $e');
+                }
               });
-            });
-            return provider;
+              return provider;
+            } catch (e) {
+              print('ReminderProvider 생성 실패: $e');
+              return ReminderProvider();
+            }
           },
         ),
       ],
