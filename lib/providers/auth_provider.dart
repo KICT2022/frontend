@@ -7,6 +7,13 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  // 등록된 사용자 목록 (실제로는 데이터베이스에서 관리)
+  final Map<String, String> _registeredUsers = {
+    'test@example.com': 'TestPass123',
+    'user@test.com': 'UserPass456',
+    'admin@test.com': 'AdminPass789',
+  };
+
   User? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -21,18 +28,34 @@ class AuthProvider extends ChangeNotifier {
       // 실제 구현에서는 API 호출
       await Future.delayed(const Duration(milliseconds: 500));
 
-      // 임시 사용자 데이터
+      // 등록된 사용자인지 확인
+      if (!_registeredUsers.containsKey(email)) {
+        _error = '등록되지 않은 이메일입니다.';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // 비밀번호 확인
+      if (_registeredUsers[email] != password) {
+        _error = '비밀번호가 일치하지 않습니다.';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // 로그인 성공 - 사용자 정보 생성
       _currentUser = User(
-        id: '1',
-        name: '홍길동',
+        id: email.hashCode.toString(),
+        name: _getUserNameByEmail(email),
         email: email,
         phoneNumber: '010-1234-5678',
         gender: '남',
-        birthDate: DateTime(1970, 1, 1),
+        birthDate: DateTime(1990, 1, 1),
         medicalHistory: ['위염', '편도염'],
         currentMedications: ['A약', 'B약'],
         guardian: Guardian(
-          name: '홍길동',
+          name: '보호자',
           relationship: '자녀',
           phoneNumber: '010-0000-0000',
         ),
@@ -62,6 +85,20 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  // 이메일로 사용자 이름 가져오기
+  String _getUserNameByEmail(String email) {
+    switch (email) {
+      case 'test@example.com':
+        return '테스트 사용자';
+      case 'user@test.com':
+        return '일반 사용자';
+      case 'admin@test.com':
+        return '관리자';
+      default:
+        return '사용자';
+    }
+  }
+
   Future<bool> register({
     required String name,
     required String email,
@@ -77,6 +114,17 @@ class AuthProvider extends ChangeNotifier {
     try {
       // 실제 구현에서는 API 호출
       await Future.delayed(const Duration(seconds: 1));
+
+      // 이미 등록된 이메일인지 확인
+      if (_registeredUsers.containsKey(email)) {
+        _error = '이미 등록된 이메일입니다.';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // 새 사용자 등록
+      _registeredUsers[email] = password;
 
       _currentUser = User(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
