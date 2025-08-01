@@ -336,6 +336,14 @@ class _SearchScreenState extends State<SearchScreen> {
     return pages;
   }
 
+  List<List<Map<String, dynamic>>> _getCategoryPages() {
+    List<List<Map<String, dynamic>>> pages = [];
+    for (int i = 0; i < _symptomCategories.length; i += 4) {
+      pages.add(_symptomCategories.skip(i).take(4).toList());
+    }
+    return pages;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -875,75 +883,144 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildCategoryGrid() {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.2,
-      ),
-      itemCount: _symptomCategories.length,
-      itemBuilder: (context, index) {
-        final category = _symptomCategories[index];
-        return GestureDetector(
-          onTap: () {
-            setState(() {
-              _selectedCategoryId = category['id'];
-              _currentSymptomCards = List<Map<String, dynamic>>.from(
-                category['symptoms'],
+    return Column(
+      children: [
+        // 카테고리 그리드
+        SizedBox(
+          height: 280,
+          child: PageView.builder(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentPage = index;
+              });
+            },
+            itemCount: _getCategoryPages().length,
+            itemBuilder: (context, pageIndex) {
+              final pageCategories = _getCategoryPages()[pageIndex];
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 1.2,
+                ),
+                itemCount: pageCategories.length,
+                itemBuilder: (context, index) {
+                  final category = pageCategories[index];
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedCategoryId = category['id'];
+                        _currentSymptomCards = List<Map<String, dynamic>>.from(
+                          category['symptoms'],
+                        );
+                        _currentPage = 0;
+                      });
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade300),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.shade200,
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            category['icon'],
+                            size: 48,
+                            color: const Color(0xFF174D4D),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            category['title'],
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF174D4D),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            category['description'],
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${category['symptoms'].length}개 증상',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               );
-              _currentPage = 0;
-            });
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade300),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.shade200,
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  category['icon'],
-                  size: 48,
-                  color: const Color(0xFF174D4D),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  category['title'],
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF174D4D),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  category['description'],
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${category['symptoms'].length}개 증상',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                ),
-              ],
-            ),
+            },
           ),
-        );
-      },
+        ),
+        const SizedBox(height: 4),
+
+        // 페이지 인디케이터
+        if (_getCategoryPages().length > 1)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (_currentPage > 0)
+                IconButton(
+                  onPressed: () {
+                    _pageController.previousPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  icon: const Icon(Icons.arrow_back_ios, size: 20),
+                ),
+              ...List.generate(_getCategoryPages().length, (index) {
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color:
+                        _currentPage == index
+                            ? Colors.green.shade600
+                            : Colors.grey.shade300,
+                  ),
+                );
+              }),
+              if (_currentPage < _getCategoryPages().length - 1)
+                IconButton(
+                  onPressed: () {
+                    _pageController.nextPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  icon: const Icon(Icons.arrow_forward_ios, size: 20),
+                ),
+            ],
+          ),
+      ],
     );
   }
 
