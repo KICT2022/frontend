@@ -204,7 +204,7 @@ class SettingsScreen extends StatelessWidget {
                 iconSize: iconSize,
               ),
 
-              SizedBox(height: isSeniorMode ? 50.0 : 40.0),
+              SizedBox(height: isSeniorMode ? 30.0 : 20.0),
 
               // 로그아웃 버튼
               SizedBox(

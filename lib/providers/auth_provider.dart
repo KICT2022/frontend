@@ -1,23 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
+import '../services/auth_api_service.dart';
+import '../services/api_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   User? _currentUser;
   bool _isLoading = false;
   String? _error;
 
-  // 등록된 사용자 목록 (실제로는 데이터베이스에서 관리)
-  final Map<String, String> _registeredUsers = {
-    'test@example.com': 'TestPass123',
-    'user@test.com': 'UserPass456',
-    'admin@test.com': 'AdminPass789',
-  };
+  final AuthApiService _authApiService = AuthApiService();
+  final ApiService _apiService = ApiService();
 
   User? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isLoggedIn => _currentUser != null;
+
+  // 앱 시작 시 토큰 초기화 및 자동 로그인 확인
+  Future<void> initialize() async {
+    await _apiService.initializeTokens();
+    await _checkAutoLogin();
+  }
+
+  // 자동 로그인 확인
+  Future<void> _checkAutoLogin() async {
+    try {
+      // 토큰이 있는지 먼저 확인
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('access_token');
+
+      if (accessToken == null || accessToken.isEmpty) {
+        return;
+      }
+
+      // 토큰이 있으면 사용자 정보 가져오기 시도
+      final result = await _authApiService.getCurrentUser();
+      if (result.success && result.user != null) {
+        _currentUser = result.user;
+        notifyListeners();
+      }
+    } catch (e) {
+      // 자동 로그인 실패는 무시 (사용자가 수동 로그인 필요)
+    }
+  }
 
   Future<bool> login(String email, String password) async {
     _isLoading = true;
@@ -25,77 +51,37 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // 실제 구현에서는 API 호출
-      await Future.delayed(const Duration(milliseconds: 500));
+      final result = await _authApiService.login(email, password);
 
-      // 등록된 사용자인지 확인
-      if (!_registeredUsers.containsKey(email)) {
-        _error = '등록되지 않은 이메일입니다.';
+      if (result.success && result.user != null) {
+        _currentUser = result.user;
+
+        // 로그인 상태 저장 (SharedPreferences)
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_id', _currentUser!.id);
+        await prefs.setString('user_email', _currentUser!.email);
+        await prefs.setString('user_name', _currentUser!.name);
+        await prefs.setString('user_phone', _currentUser!.phoneNumber);
+        await prefs.setString('user_gender', _currentUser!.gender);
+        await prefs.setString(
+          'user_birth_date',
+          _currentUser!.birthDate.toIso8601String(),
+        );
+
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _error = result.error ?? '로그인에 실패했습니다.';
         _isLoading = false;
         notifyListeners();
         return false;
       }
-
-      // 비밀번호 확인
-      if (_registeredUsers[email] != password) {
-        _error = '비밀번호가 일치하지 않습니다.';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      // 로그인 성공 - 사용자 정보 생성
-      _currentUser = User(
-        id: email.hashCode.toString(),
-        name: _getUserNameByEmail(email),
-        email: email,
-        phoneNumber: '010-1234-5678',
-        gender: '남',
-        birthDate: DateTime(1990, 1, 1),
-        medicalHistory: ['위염', '편도염'],
-        currentMedications: ['A약', 'B약'],
-        guardian: Guardian(
-          name: '보호자',
-          relationship: '자녀',
-          phoneNumber: '010-0000-0000',
-        ),
-        address: '경기도 용인시 기흥구',
-      );
-
-      // 로그인 상태 저장
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_id', _currentUser!.id);
-      await prefs.setString('user_email', _currentUser!.email);
-      await prefs.setString('user_name', _currentUser!.name);
-      await prefs.setString('user_phone', _currentUser!.phoneNumber);
-      await prefs.setString('user_gender', _currentUser!.gender);
-      await prefs.setString(
-        'user_birth_date',
-        _currentUser!.birthDate.toIso8601String(),
-      );
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
     } catch (e) {
-      _error = '로그인에 실패했습니다: $e';
+      _error = '로그인 중 오류가 발생했습니다: $e';
       _isLoading = false;
       notifyListeners();
       return false;
-    }
-  }
-
-  // 이메일로 사용자 이름 가져오기
-  String _getUserNameByEmail(String email) {
-    switch (email) {
-      case 'test@example.com':
-        return '테스트 사용자';
-      case 'user@test.com':
-        return '일반 사용자';
-      case 'admin@test.com':
-        return '관리자';
-      default:
-        return '사용자';
     }
   }
 
@@ -112,49 +98,44 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // 실제 구현에서는 API 호출
-      await Future.delayed(const Duration(seconds: 1));
+      final result = await _authApiService.register(
+        name: name,
+        email: email,
+        password: password,
+        phoneNumber: phoneNumber,
+        gender: gender,
+        birthDate: birthDate,
+      );
 
-      // 이미 등록된 이메일인지 확인
-      if (_registeredUsers.containsKey(email)) {
-        _error = '이미 등록된 이메일입니다.';
+      if (result.success) {
+        // 회원가입 후 자동 로그인된 경우
+        if (result.user != null) {
+          _currentUser = result.user;
+
+          // 로그인 상태 저장
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('user_id', _currentUser!.id);
+          await prefs.setString('user_email', _currentUser!.email);
+          await prefs.setString('user_name', _currentUser!.name);
+          await prefs.setString('user_phone', _currentUser!.phoneNumber);
+          await prefs.setString('user_gender', _currentUser!.gender);
+          await prefs.setString(
+            'user_birth_date',
+            _currentUser!.birthDate.toIso8601String(),
+          );
+        }
+
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _error = result.error ?? '회원가입에 실패했습니다.';
         _isLoading = false;
         notifyListeners();
         return false;
       }
-
-      // 새 사용자 등록
-      _registeredUsers[email] = password;
-
-      _currentUser = User(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        name: name,
-        email: email,
-        phoneNumber: phoneNumber,
-        gender: gender,
-        birthDate: birthDate,
-        medicalHistory: [],
-        currentMedications: [],
-        address: '',
-      );
-
-      // 회원가입 상태 저장
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_id', _currentUser!.id);
-      await prefs.setString('user_email', _currentUser!.email);
-      await prefs.setString('user_name', _currentUser!.name);
-      await prefs.setString('user_phone', _currentUser!.phoneNumber);
-      await prefs.setString('user_gender', _currentUser!.gender);
-      await prefs.setString(
-        'user_birth_date',
-        _currentUser!.birthDate.toIso8601String(),
-      );
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
     } catch (e) {
-      _error = '회원가입에 실패했습니다: $e';
+      _error = '회원가입 중 오류가 발생했습니다: $e';
       _isLoading = false;
       notifyListeners();
       return false;
@@ -162,6 +143,14 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    try {
+      // 서버에 로그아웃 요청
+      await _authApiService.logout();
+    } catch (e) {
+      print('서버 로그아웃 실패: $e');
+    }
+
+    // 로컬 데이터 정리
     _currentUser = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('user_id');
@@ -176,6 +165,7 @@ class AuthProvider extends ChangeNotifier {
     await prefs.remove('guardian_name');
     await prefs.remove('guardian_phone');
     await prefs.remove('guardian_relationship');
+
     notifyListeners();
   }
 
@@ -238,6 +228,13 @@ class AuthProvider extends ChangeNotifier {
   }
 
   void clearError() {
+    _error = null;
+    notifyListeners();
+  }
+
+  // 외부에서 사용자 정보 설정
+  void setCurrentUser(User user) {
+    _currentUser = user;
     _error = null;
     notifyListeners();
   }

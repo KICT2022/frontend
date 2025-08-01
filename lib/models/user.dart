@@ -25,16 +25,26 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'],
-      name: json['name'],
-      email: json['email'],
-      phoneNumber: json['phoneNumber'],
-      gender: json['gender'],
-      birthDate: DateTime.parse(json['birthDate']),
-      medicalHistory: List<String>.from(json['medicalHistory'] ?? []),
-      currentMedications: List<String>.from(json['currentMedications'] ?? []),
-      guardian: json['guardian'] != null ? Guardian.fromJson(json['guardian']) : null,
-      address: json['address'],
+      id: json['id']?.toString() ?? '',
+      name: json['name'] ?? '',
+      email: json['email'] ?? '',
+      phoneNumber: json['phoneNumber'] ?? json['phone_number'] ?? '',
+      gender: json['gender'] ?? '',
+      birthDate:
+          json['birthDate'] != null
+              ? DateTime.parse(json['birthDate'])
+              : json['birth_date'] != null
+              ? DateTime.parse(json['birth_date'])
+              : DateTime.now(),
+      medicalHistory: List<String>.from(
+        json['medicalHistory'] ?? json['medical_history'] ?? [],
+      ),
+      currentMedications: List<String>.from(
+        json['currentMedications'] ?? json['current_medications'] ?? [],
+      ),
+      guardian:
+          json['guardian'] != null ? Guardian.fromJson(json['guardian']) : null,
+      address: json['address'] ?? '',
     );
   }
 
@@ -106,4 +116,4 @@ class Guardian {
       'phoneNumber': phoneNumber,
     };
   }
-} 
+}

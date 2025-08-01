@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
+import '../services/api_manager.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,6 +25,10 @@ class _LoginScreenState extends State<LoginScreen> {
   String _emailErrorText = '';
   String _passwordErrorText = '';
   bool _hasAttemptedLogin = false; // 로그인 시도 여부
+
+  // API 매니저 추가
+  final ApiManager _apiManager = ApiManager();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -97,6 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
     // 로그인 시도 플래그 설정
     setState(() {
       _hasAttemptedLogin = true;
+      _isLoading = true;
     });
 
     // 모든 필드 검증
@@ -105,27 +111,36 @@ class _LoginScreenState extends State<LoginScreen> {
 
     // 에러가 있으면 로그인 시도하지 않음
     if (_emailHasError || _passwordHasError) {
+      setState(() {
+        _isLoading = false;
+      });
       return;
     }
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
     try {
-      final success = await authProvider.login(
+      // API 매니저를 통한 직접 로그인 시도
+      final result = await _apiManager.login(
         _emailController.text.trim(),
         _passwordController.text,
       );
 
-      if (success && mounted) {
-        context.go('/home');
-      } else if (mounted) {
-        // 로그인 실패 시 에러 메시지 표시
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(authProvider.error ?? '등록되지 않은 사용자입니다.'),
-            backgroundColor: Colors.red,
-          ),
-        );
+      if (result.success && result.user != null) {
+        // AuthProvider에도 사용자 정보 설정
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        authProvider.setCurrentUser(result.user!);
+
+        if (mounted) {
+          context.go('/home');
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.error ?? '로그인에 실패했습니다.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -135,6 +150,12 @@ class _LoginScreenState extends State<LoginScreen> {
             backgroundColor: Colors.red,
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }

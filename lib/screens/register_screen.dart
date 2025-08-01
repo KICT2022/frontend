@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
+import '../services/api_manager.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -37,6 +38,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _verificationCode;
   int _countdown = 0;
   Timer? _timer;
+
+  // API 매니저 추가
+  final ApiManager _apiManager = ApiManager();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -162,25 +167,67 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final success = await authProvider.register(
-      name: _nameController.text,
-      email: _emailController.text,
-      password: _passwordController.text,
-      phoneNumber: _phoneController.text,
-      gender: _selectedGender,
-      birthDate: _selectedDate,
-    );
+    setState(() {
+      _isLoading = true;
+    });
 
-    if (success && mounted) {
-      context.go('/home');
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authProvider.error ?? '회원가입에 실패했습니다.'),
-          backgroundColor: Colors.red,
-        ),
+    try {
+      // API 매니저를 통한 직접 회원가입 시도
+      final result = await _apiManager.signup(
+        name: _nameController.text,
+        email: _emailController.text,
+        password: _passwordController.text,
+        passwordConfirm: _confirmPasswordController.text,
+        gender: _selectedGender,
+        birthDate:
+            _selectedDate.toIso8601String().split('T')[0], // YYYY-MM-DD 형식
+        phoneNumber: _phoneController.text,
       );
+
+      if (result.success) {
+        if (result.user != null) {
+          // AuthProvider에도 사용자 정보 설정
+          final authProvider = Provider.of<AuthProvider>(
+            context,
+            listen: false,
+          );
+          authProvider.setCurrentUser(result.user!);
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message ?? '회원가입이 완료되었습니다.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          context.go('/home');
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.error ?? '회원가입에 실패했습니다.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('회원가입 중 오류가 발생했습니다: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

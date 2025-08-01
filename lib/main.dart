@@ -21,6 +21,7 @@ import 'screens/settings_screen.dart';
 import 'screens/notification_screen.dart';
 import 'screens/medication_search_result_screen.dart';
 import 'screens/profile_edit_screen.dart';
+
 import 'utils/notification_service.dart';
 
 // 전역 NotificationProvider 접근을 위한 변수
@@ -67,7 +68,16 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(
+          create: (_) {
+            final authProvider = AuthProvider();
+            // 앱 시작 시 토큰 초기화 및 자동 로그인 확인
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              authProvider.initialize();
+            });
+            return authProvider;
+          },
+        ),
         ChangeNotifierProvider(create: (_) => MedicationProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(
