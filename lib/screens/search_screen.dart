@@ -887,7 +887,7 @@ class _SearchScreenState extends State<SearchScreen> {
       children: [
         // 카테고리 그리드
         SizedBox(
-          height: 280,
+          height: 350,
           child: PageView.builder(
             controller: _pageController,
             onPageChanged: (index) {
@@ -903,9 +903,9 @@ class _SearchScreenState extends State<SearchScreen> {
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 1.2,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  childAspectRatio: 1.4,
                 ),
                 itemCount: pageCategories.length,
                 itemBuilder: (context, index) {
@@ -923,12 +923,12 @@ class _SearchScreenState extends State<SearchScreen> {
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.grey.shade300),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.grey.shade200,
-                            blurRadius: 8,
+                            blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),
                         ],
@@ -938,33 +938,33 @@ class _SearchScreenState extends State<SearchScreen> {
                         children: [
                           Icon(
                             category['icon'],
-                            size: 48,
+                            size: 32,
                             color: const Color(0xFF174D4D),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 6),
                           Text(
                             category['title'],
                             style: const TextStyle(
-                              fontSize: 16,
+                              fontSize: 13,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF174D4D),
                             ),
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 2),
                           Text(
                             category['description'],
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 9,
                               color: Colors.grey.shade600,
                             ),
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 2),
                           Text(
                             '${category['symptoms'].length}개 증상',
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: 8,
                               color: Colors.grey.shade500,
                             ),
                           ),
@@ -977,48 +977,51 @@ class _SearchScreenState extends State<SearchScreen> {
             },
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 8),
 
         // 페이지 인디케이터
         if (_getCategoryPages().length > 1)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (_currentPage > 0)
-                IconButton(
-                  onPressed: () {
-                    _pageController.previousPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  },
-                  icon: const Icon(Icons.arrow_back_ios, size: 20),
-                ),
-              ...List.generate(_getCategoryPages().length, (index) {
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color:
-                        _currentPage == index
-                            ? Colors.green.shade600
-                            : Colors.grey.shade300,
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (_currentPage > 0)
+                  IconButton(
+                    onPressed: () {
+                      _pageController.previousPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    icon: const Icon(Icons.arrow_back_ios, size: 20),
                   ),
-                );
-              }),
-              if (_currentPage < _getCategoryPages().length - 1)
-                IconButton(
-                  onPressed: () {
-                    _pageController.nextPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  },
-                  icon: const Icon(Icons.arrow_forward_ios, size: 20),
-                ),
-            ],
+                ...List.generate(_getCategoryPages().length, (index) {
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color:
+                          _currentPage == index
+                              ? Colors.green.shade600
+                              : Colors.grey.shade300,
+                    ),
+                  );
+                }),
+                if (_currentPage < _getCategoryPages().length - 1)
+                  IconButton(
+                    onPressed: () {
+                      _pageController.nextPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    icon: const Icon(Icons.arrow_forward_ios, size: 20),
+                  ),
+              ],
+            ),
           ),
       ],
     );
