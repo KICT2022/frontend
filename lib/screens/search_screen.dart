@@ -816,23 +816,32 @@ class _SearchScreenState extends State<SearchScreen> {
 
       // 증상에 대한 약 추천 프롬프트 생성
       final prompt = '''
-다음 증상들에 대한 구체적인 약물명과 정보를 알려주세요: $selectedSymptoms
+다음 증상들을 모두 고려하여 가장 적합한 약물 3가지 이상을 추천해주세요: $selectedSymptoms
 
-다음 형식으로 정확히 작성해주세요:
+모든 증상을 종합적으로 분석하여 가장 효과적인 약물을 추천해주세요.
+각 약물의 정보는 다음 형식으로 작성해주되, 항목명은 제외하고 내용만 작성해주세요:
 
-1. **약물명:** [정확한 약물명]
-   - **효능:** [약물의 효능과 작용]
-   - **복용법:** [구체적인 복용 방법과 용량]
-   - **부작용:** [주요 부작용]
-   - **주의사항:** [복용 시 주의사항]
+1. [정확한 약물명]
+   [약물의 효능과 작용에 대한 상세한 설명]
+   [구체적인 복용 방법과 용량 정보]
+   [복용 시 주의해야 할 사항들]
+   [주요 부작용과 부정적 반응]
 
-2. **약물명:** [정확한 약물명]
-   - **효능:** [약물의 효능과 작용]
-   - **복용법:** [구체적인 복용 방법과 용량]
-   - **부작용:** [주요 부작용]
-   - **주의사항:** [복용 시 주의사항]
+2. [정확한 약물명]
+   [약물의 효능과 작용에 대한 상세한 설명]
+   [구체적인 복용 방법과 용량 정보]
+   [복용 시 주의해야 할 사항들]
+   [주요 부작용과 부정적 반응]
+
+3. [정확한 약물명]
+   [약물의 효능과 작용에 대한 상세한 설명]
+   [구체적인 복용 방법과 용량 정보]
+   [복용 시 주의해야 할 사항들]
+   [주요 부작용과 부정적 반응]
 
 증상이 아닌 실제 약물명을 추천해주시고, 각 약물의 정보를 명확히 구분해서 작성해주세요.
+서로 다른 부위의 증상이 있어도 모든 증상을 종합적으로 고려하여 가장 적합한 약물을 추천해주세요.
+반드시 3가지 이상의 약물을 추천해주세요.
 ''';
 
       // API 호출
@@ -926,48 +935,22 @@ class _SearchScreenState extends State<SearchScreen> {
     // 결과 텍스트를 줄바꿈으로 분리
     List<String> lines = result.split('\n');
     Map<String, String> currentMedication = {};
-
-    // 약물 정보 섹션 키워드
-    final Map<String, List<String>> sectionKeywords = {
-      'name': ['약물명:', '약명:', '약:', '약물:', '**약물명:', '**약명:'],
-      'description': ['효능:', '효과:', '작용:', '**효능:', '**효과:', '**작용:'],
-      'usage': ['복용법:', '용법:', '투여법:', '**복용법:', '**용법:', '**투여법:'],
-      'sideEffects': ['부작용:', '**부작용:'],
-      'precautions': ['주의사항:', '주의:', '금기:', '**주의사항:', '**주의:', '**금기:'],
-    };
+    int currentSection = 0; // 0: 이름, 1: 효능, 2: 복용법, 3: 주의사항, 4: 부작용
 
     for (String line in lines) {
       line = line.trim();
       if (line.isEmpty) continue;
 
-      // 새로운 약물 시작 패턴 확인
-      bool isNewMedication = false;
-      String medicationName = '';
-
-      // 약물명 패턴 확인 (숫자. 로 시작하거나 **약물명: 형태)
-      if (RegExp(r'^\d+\.\s*\*\*약물명:').hasMatch(line)) {
-        isNewMedication = true;
-        medicationName =
-            line.replaceAll(RegExp(r'^\d+\.\s*\*\*약물명:\s*'), '').trim();
-      } else if (RegExp(r'^\d+\.\s*약물명:').hasMatch(line)) {
-        isNewMedication = true;
-        medicationName =
-            line.replaceAll(RegExp(r'^\d+\.\s*약물명:\s*'), '').trim();
-      } else if (RegExp(r'^\*\*약물명:').hasMatch(line)) {
-        isNewMedication = true;
-        medicationName = line.replaceAll(RegExp(r'^\*\*약물명:\s*'), '').trim();
-      } else if (RegExp(r'^약물명:').hasMatch(line)) {
-        isNewMedication = true;
-        medicationName = line.replaceAll(RegExp(r'^약물명:\s*'), '').trim();
-      }
-
-      if (isNewMedication && medicationName.isNotEmpty) {
+      // 새로운 약물 시작 패턴 확인 (숫자. 로 시작)
+      if (RegExp(r'^\d+\.\s*').hasMatch(line)) {
         // 이전 약물 정보가 있으면 저장
         if (currentMedication.isNotEmpty) {
           _parsedMedications.add(Map.from(currentMedication));
         }
 
         // 새로운 약물 시작
+        String medicationName =
+            line.replaceAll(RegExp(r'^\d+\.\s*'), '').trim();
         currentMedication = {
           'name': medicationName,
           'description': '',
@@ -975,47 +958,47 @@ class _SearchScreenState extends State<SearchScreen> {
           'sideEffects': '',
           'precautions': '',
         };
+        currentSection = 0; // 이름 다음부터 시작
       } else if (currentMedication.isNotEmpty) {
-        // 각 섹션별로 내용 분류
-        bool sectionFound = false;
-
-        for (String section in sectionKeywords.keys) {
-          for (String keyword in sectionKeywords[section]!) {
-            if (line.startsWith(keyword)) {
-              String content =
-                  line.replaceAll(RegExp('^$keyword\\s*'), '').trim();
-              if (content.isNotEmpty) {
-                currentMedication[section] = content;
-              }
-              sectionFound = true;
-              break;
+        // 현재 섹션에 따라 내용 분류
+        switch (currentSection) {
+          case 0: // 이름 다음 - 효능
+            if (currentMedication['description']!.isEmpty) {
+              currentMedication['description'] = line;
+            } else {
+              currentMedication['description'] =
+                  '${currentMedication['description']}\n$line';
             }
-          }
-          if (sectionFound) break;
+            break;
+          case 1: // 효능 다음 - 복용법
+            if (currentMedication['usage']!.isEmpty) {
+              currentMedication['usage'] = line;
+            } else {
+              currentMedication['usage'] =
+                  '${currentMedication['usage']}\n$line';
+            }
+            break;
+          case 2: // 복용법 다음 - 주의사항
+            if (currentMedication['precautions']!.isEmpty) {
+              currentMedication['precautions'] = line;
+            } else {
+              currentMedication['precautions'] =
+                  '${currentMedication['precautions']}\n$line';
+            }
+            break;
+          case 3: // 주의사항 다음 - 부작용
+            if (currentMedication['sideEffects']!.isEmpty) {
+              currentMedication['sideEffects'] = line;
+            } else {
+              currentMedication['sideEffects'] =
+                  '${currentMedication['sideEffects']}\n$line';
+            }
+            break;
         }
 
-        // 섹션 키워드가 없는 경우, 현재 활성 섹션에 추가
-        if (!sectionFound && line.isNotEmpty) {
-          // 마지막으로 업데이트된 섹션에 추가
-          String lastSection = '';
-          if (currentMedication['description']!.isNotEmpty) {
-            lastSection = 'description';
-          } else if (currentMedication['usage']!.isNotEmpty) {
-            lastSection = 'usage';
-          } else if (currentMedication['sideEffects']!.isNotEmpty) {
-            lastSection = 'sideEffects';
-          } else if (currentMedication['precautions']!.isNotEmpty) {
-            lastSection = 'precautions';
-          } else {
-            lastSection = 'description';
-          }
-
-          if (currentMedication[lastSection]!.isNotEmpty) {
-            currentMedication[lastSection] =
-                '${currentMedication[lastSection]}\n$line';
-          } else {
-            currentMedication[lastSection] = line;
-          }
+        // 빈 줄을 만나면 다음 섹션으로 이동
+        if (line.isEmpty) {
+          currentSection++;
         }
       }
     }
@@ -1290,67 +1273,116 @@ class _SearchScreenState extends State<SearchScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 약 이름
-            Row(
-              children: [
-                Icon(Icons.medication, color: Colors.green.shade700, size: 24),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    medication['name'] ?? '약물명',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+            // 약 이름 헤더
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.green.shade50, Colors.green.shade100],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.shade300, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.green.shade200.withOpacity(0.3),
+                    spreadRadius: 1,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
                       color: Colors.green.shade700,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.medication,
+                      color: Colors.white,
+                      size: 24,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '약물명',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.green.shade600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          medication['name'] ?? '약물명',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // 효능/작용
+            _buildEnhancedInfoSection(
+              '효능/작용',
+              Icons.healing,
+              medication['description']?.isNotEmpty == true
+                  ? medication['description']!
+                  : '효능 정보가 없습니다.',
+              Colors.blue.shade700,
+              Colors.blue.shade50,
             ),
             const SizedBox(height: 16),
 
-            // 효능/작용
-            if (medication['description']?.isNotEmpty == true) ...[
-              _buildInfoSection(
-                '효능/작용',
-                Icons.healing,
-                medication['description']!,
-                Colors.blue.shade700,
-              ),
-              const SizedBox(height: 16),
-            ],
-
             // 복용법
-            if (medication['usage']?.isNotEmpty == true) ...[
-              _buildInfoSection(
-                '복용법',
-                Icons.schedule,
-                medication['usage']!,
-                Colors.orange.shade700,
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // 부작용
-            if (medication['sideEffects']?.isNotEmpty == true) ...[
-              _buildInfoSection(
-                '부작용',
-                Icons.error_outline,
-                medication['sideEffects']!,
-                Colors.red.shade600,
-              ),
-              const SizedBox(height: 16),
-            ],
+            _buildEnhancedInfoSection(
+              '복용법',
+              Icons.schedule,
+              medication['usage']?.isNotEmpty == true
+                  ? medication['usage']!
+                  : '복용법 정보가 없습니다.',
+              Colors.orange.shade700,
+              Colors.orange.shade50,
+            ),
+            const SizedBox(height: 16),
 
             // 주의사항
-            if (medication['precautions']?.isNotEmpty == true) ...[
-              _buildInfoSection(
-                '주의사항',
-                Icons.warning,
-                medication['precautions']!,
-                Colors.amber.shade700,
-              ),
-            ],
+            _buildEnhancedInfoSection(
+              '주의사항',
+              Icons.warning,
+              medication['precautions']?.isNotEmpty == true
+                  ? medication['precautions']!
+                  : '주의사항 정보가 없습니다.',
+              Colors.amber.shade700,
+              Colors.amber.shade50,
+            ),
+            const SizedBox(height: 16),
+
+            // 부작용
+            _buildEnhancedInfoSection(
+              '부작용',
+              Icons.error_outline,
+              medication['sideEffects']?.isNotEmpty == true
+                  ? medication['sideEffects']!
+                  : '부작용 정보가 없습니다.',
+              Colors.red.shade600,
+              Colors.red.shade50,
+            ),
           ],
         ),
       ),
@@ -1391,6 +1423,85 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  // 개선된 정보 섹션 위젯
+  Widget _buildEnhancedInfoSection(
+    String title,
+    IconData icon,
+    String content,
+    Color color,
+    Color backgroundColor,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  content,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade800,
+                    height: 1.5,
+                  ),
+                ),
+                if (content.contains('\n')) ...[
+                  const SizedBox(height: 8),
+                  Container(height: 1, color: Colors.grey.shade200),
+                  const SizedBox(height: 8),
+                  Text(
+                    '상세 정보',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: color.withOpacity(0.7),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
