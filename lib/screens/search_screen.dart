@@ -28,75 +28,156 @@ class _SearchScreenState extends State<SearchScreen> {
   String? _validationMessage;
   // 증상 입력 필드 컨트롤러
   TextEditingController _symptomInputController = TextEditingController();
-  // 증상 카드 데이터
-  final List<Map<String, dynamic>> _symptomCards = [
-    // 기존 증상들
-    {'title': '두통', 'icon': Icons.headset, 'symptom': '머리가 아파요'},
-    {'title': '인후통', 'icon': Icons.record_voice_over, 'symptom': '목이 아파요'},
-    {'title': '요통', 'icon': Icons.accessibility, 'symptom': '허리가 아파요'},
-    {'title': '흉통', 'icon': Icons.favorite, 'symptom': '심장이 아파요'},
-    {'title': '복통', 'icon': Icons.person, 'symptom': '배가 아파요'},
-    {'title': '관절통', 'icon': Icons.accessibility_new, 'symptom': '관절이 아파요'},
-    {'title': '치통', 'icon': Icons.face, 'symptom': '이가 아파요'},
-    {'title': '귀앓이', 'icon': Icons.hearing, 'symptom': '귀가 아파요'},
-    {'title': '어깨통증', 'icon': Icons.accessibility, 'symptom': '어깨가 아파요'},
-    {'title': '무릎통증', 'icon': Icons.directions_walk, 'symptom': '무릎이 아파요'},
-    {'title': '손목통증', 'icon': Icons.pan_tool, 'symptom': '손목이 아파요'},
-    {'title': '발목통증', 'icon': Icons.directions_run, 'symptom': '발목이 아파요'},
-
-    // 전신 증상
-    {'title': '발열', 'icon': Icons.thermostat, 'symptom': '열이 남'},
-    {'title': '오한', 'icon': Icons.ac_unit, 'symptom': '몸이 떨림'},
-    {'title': '피로감', 'icon': Icons.bedtime, 'symptom': '무기력 / 피로감'},
-    {'title': '식욕저하', 'icon': Icons.restaurant, 'symptom': '식욕 저하'},
-    {'title': '체중감소', 'icon': Icons.monitor_weight, 'symptom': '체중 감소'},
-
-    // 머리/얼굴
-    {'title': '어지럼증', 'icon': Icons.rotate_right, 'symptom': '어지럼증'},
-    {'title': '눈충혈', 'icon': Icons.visibility, 'symptom': '눈 충혈 / 가려움 / 통증'},
-    {'title': '코막힘', 'icon': Icons.air, 'symptom': '코막힘 / 콧물'},
-    {'title': '귀통증', 'icon': Icons.hearing, 'symptom': '귀 통증 / 이명 / 귀막힘'},
-
-    // 호흡기
-    {'title': '기침', 'icon': Icons.air, 'symptom': '기침'},
-    {'title': '가래', 'icon': Icons.water_drop, 'symptom': '가래'},
-    {'title': '목쉼', 'icon': Icons.record_voice_over, 'symptom': '목 쉼 / 음성 변화'},
-    {'title': '호흡곤란', 'icon': Icons.air, 'symptom': '호흡곤란 / 숨참'},
-
-    // 소화기
-    {'title': '메스꺼움', 'icon': Icons.sick, 'symptom': '메스꺼움 / 구토'},
-    {'title': '설사', 'icon': Icons.water_drop, 'symptom': '설사'},
-    {'title': '변비', 'icon': Icons.block, 'symptom': '변비'},
-    {'title': '속쓰림', 'icon': Icons.local_fire_department, 'symptom': '속 쓰림'},
-    {'title': '트림', 'icon': Icons.air, 'symptom': '트림 / 가스참'},
-    {'title': '소화불량', 'icon': Icons.restaurant, 'symptom': '소화불량'},
-
-    // 근골격계
-    {'title': '근육통', 'icon': Icons.fitness_center, 'symptom': '근육통'},
-    {'title': '목덜미통증', 'icon': Icons.accessibility, 'symptom': '목덜미 통증'},
-    {'title': '팔다리저림', 'icon': Icons.accessibility_new, 'symptom': '팔/다리 저림'},
-
-    // 피부/외형
-    {'title': '피부발진', 'icon': Icons.brush, 'symptom': '피부 발진 / 두드러기'},
-    {'title': '가려움증', 'icon': Icons.touch_app, 'symptom': '가려움증'},
-    {'title': '부종', 'icon': Icons.water_drop, 'symptom': '부종 (붓기)'},
-    {'title': '멍', 'icon': Icons.healing, 'symptom': '멍 / 외상'},
-
-    // 비뇨기/생식기
-    {'title': '배뇨통', 'icon': Icons.wc, 'symptom': '소변 시 통증 (배뇨통)'},
-    {'title': '빈뇨', 'icon': Icons.water_drop, 'symptom': '빈뇨 / 야뇨'},
-    {'title': '생리통', 'icon': Icons.female, 'symptom': '생리통 / 생리불순'},
-    {'title': '질분비물', 'icon': Icons.female, 'symptom': '질 분비물 증가'},
-    {'title': '음경가려움', 'icon': Icons.male, 'symptom': '음경 가려움 / 통증'},
-
-    // 신경/정신
-    {'title': '불면증', 'icon': Icons.bedtime, 'symptom': '불면증'},
-    {'title': '불안감', 'icon': Icons.psychology, 'symptom': '불안감 / 초조함'},
-    {'title': '우울감', 'icon': Icons.sentiment_dissatisfied, 'symptom': '우울감'},
-    {'title': '집중력저하', 'icon': Icons.center_focus_strong, 'symptom': '집중력 저하'},
-    {'title': '기억력저하', 'icon': Icons.psychology, 'symptom': '기억력 저하'},
-    {'title': '경련', 'icon': Icons.flash_on, 'symptom': '경련 / 발작'},
+  // 증상 카테고리 데이터
+  final List<Map<String, dynamic>> _symptomCategories = [
+    {
+      'id': 'general',
+      'title': '전신 증상',
+      'icon': Icons.thermostat,
+      'description': '전체적인 신체 상태',
+      'symptoms': [
+        {'title': '발열', 'icon': Icons.thermostat, 'symptom': '열이 남'},
+        {'title': '오한', 'icon': Icons.ac_unit, 'symptom': '몸이 떨림'},
+        {'title': '피로감', 'icon': Icons.bedtime, 'symptom': '무기력 / 피로감'},
+        {'title': '식욕저하', 'icon': Icons.restaurant, 'symptom': '식욕 저하'},
+        {'title': '체중감소', 'icon': Icons.monitor_weight, 'symptom': '체중 감소'},
+      ],
+    },
+    {
+      'id': 'head_face',
+      'title': '머리/얼굴',
+      'icon': Icons.face,
+      'description': '머리와 얼굴 부위',
+      'symptoms': [
+        {'title': '두통', 'icon': Icons.headset, 'symptom': '머리가 아파요'},
+        {'title': '어지럼증', 'icon': Icons.rotate_right, 'symptom': '어지럼증'},
+        {
+          'title': '눈충혈',
+          'icon': Icons.visibility,
+          'symptom': '눈 충혈 / 가려움 / 통증',
+        },
+        {'title': '코막힘', 'icon': Icons.air, 'symptom': '코막힘 / 콧물'},
+        {'title': '귀통증', 'icon': Icons.hearing, 'symptom': '귀 통증 / 이명 / 귀막힘'},
+        {'title': '치통', 'icon': Icons.face, 'symptom': '이가 아파요'},
+      ],
+    },
+    {
+      'id': 'respiratory',
+      'title': '호흡기',
+      'icon': Icons.air,
+      'description': '호흡과 관련된 증상',
+      'symptoms': [
+        {'title': '기침', 'icon': Icons.air, 'symptom': '기침'},
+        {'title': '가래', 'icon': Icons.water_drop, 'symptom': '가래'},
+        {'title': '인후통', 'icon': Icons.record_voice_over, 'symptom': '목이 아파요'},
+        {
+          'title': '목쉼',
+          'icon': Icons.record_voice_over,
+          'symptom': '목 쉼 / 음성 변화',
+        },
+        {'title': '호흡곤란', 'icon': Icons.air, 'symptom': '호흡곤란 / 숨참'},
+      ],
+    },
+    {
+      'id': 'digestive',
+      'title': '소화기',
+      'icon': Icons.restaurant,
+      'description': '소화와 관련된 증상',
+      'symptoms': [
+        {'title': '복통', 'icon': Icons.person, 'symptom': '배가 아파요'},
+        {'title': '메스꺼움', 'icon': Icons.sick, 'symptom': '메스꺼움 / 구토'},
+        {'title': '설사', 'icon': Icons.water_drop, 'symptom': '설사'},
+        {'title': '변비', 'icon': Icons.block, 'symptom': '변비'},
+        {
+          'title': '속쓰림',
+          'icon': Icons.local_fire_department,
+          'symptom': '속 쓰림',
+        },
+        {'title': '트림', 'icon': Icons.air, 'symptom': '트림 / 가스참'},
+        {'title': '소화불량', 'icon': Icons.restaurant, 'symptom': '소화불량'},
+      ],
+    },
+    {
+      'id': 'musculoskeletal',
+      'title': '근골격계',
+      'icon': Icons.accessibility,
+      'description': '근육과 뼈, 관절',
+      'symptoms': [
+        {'title': '요통', 'icon': Icons.accessibility, 'symptom': '허리가 아파요'},
+        {'title': '관절통', 'icon': Icons.accessibility_new, 'symptom': '관절이 아파요'},
+        {'title': '어깨통증', 'icon': Icons.accessibility, 'symptom': '어깨가 아파요'},
+        {'title': '무릎통증', 'icon': Icons.directions_walk, 'symptom': '무릎이 아파요'},
+        {'title': '손목통증', 'icon': Icons.pan_tool, 'symptom': '손목이 아파요'},
+        {'title': '발목통증', 'icon': Icons.directions_run, 'symptom': '발목이 아파요'},
+        {'title': '근육통', 'icon': Icons.fitness_center, 'symptom': '근육통'},
+        {'title': '목덜미통증', 'icon': Icons.accessibility, 'symptom': '목덜미 통증'},
+        {
+          'title': '팔다리저림',
+          'icon': Icons.accessibility_new,
+          'symptom': '팔/다리 저림',
+        },
+      ],
+    },
+    {
+      'id': 'cardiovascular',
+      'title': '심혈관',
+      'icon': Icons.favorite,
+      'description': '심장과 혈관',
+      'symptoms': [
+        {'title': '흉통', 'icon': Icons.favorite, 'symptom': '심장이 아파요'},
+      ],
+    },
+    {
+      'id': 'skin',
+      'title': '피부/외형',
+      'icon': Icons.brush,
+      'description': '피부와 외형',
+      'symptoms': [
+        {'title': '피부발진', 'icon': Icons.brush, 'symptom': '피부 발진 / 두드러기'},
+        {'title': '가려움증', 'icon': Icons.touch_app, 'symptom': '가려움증'},
+        {'title': '부종', 'icon': Icons.water_drop, 'symptom': '부종 (붓기)'},
+        {'title': '멍', 'icon': Icons.healing, 'symptom': '멍 / 외상'},
+      ],
+    },
+    {
+      'id': 'urological',
+      'title': '비뇨기/생식기',
+      'icon': Icons.wc,
+      'description': '비뇨기와 생식기',
+      'symptoms': [
+        {'title': '배뇨통', 'icon': Icons.wc, 'symptom': '소변 시 통증 (배뇨통)'},
+        {'title': '빈뇨', 'icon': Icons.water_drop, 'symptom': '빈뇨 / 야뇨'},
+        {'title': '생리통', 'icon': Icons.female, 'symptom': '생리통 / 생리불순'},
+        {'title': '질분비물', 'icon': Icons.female, 'symptom': '질 분비물 증가'},
+        {'title': '음경가려움', 'icon': Icons.male, 'symptom': '음경 가려움 / 통증'},
+      ],
+    },
+    {
+      'id': 'neurological',
+      'title': '신경/정신',
+      'icon': Icons.psychology,
+      'description': '신경계와 정신',
+      'symptoms': [
+        {'title': '불면증', 'icon': Icons.bedtime, 'symptom': '불면증'},
+        {'title': '불안감', 'icon': Icons.psychology, 'symptom': '불안감 / 초조함'},
+        {
+          'title': '우울감',
+          'icon': Icons.sentiment_dissatisfied,
+          'symptom': '우울감',
+        },
+        {
+          'title': '집중력저하',
+          'icon': Icons.center_focus_strong,
+          'symptom': '집중력 저하',
+        },
+        {'title': '기억력저하', 'icon': Icons.psychology, 'symptom': '기억력 저하'},
+        {'title': '경련', 'icon': Icons.flash_on, 'symptom': '경련 / 발작'},
+      ],
+    },
   ];
+
+  // 현재 표시할 증상 카드들
+  List<Map<String, dynamic>> _currentSymptomCards = [];
   // 페이지 컨트롤러
   late PageController _pageController;
   int _currentPage = 0;
@@ -249,8 +330,8 @@ class _SearchScreenState extends State<SearchScreen> {
 
   List<List<Map<String, dynamic>>> _getSymptomPages() {
     List<List<Map<String, dynamic>>> pages = [];
-    for (int i = 0; i < _symptomCards.length; i += 6) {
-      pages.add(_symptomCards.skip(i).take(6).toList());
+    for (int i = 0; i < _currentSymptomCards.length; i += 6) {
+      pages.add(_currentSymptomCards.skip(i).take(6).toList());
     }
     return pages;
   }
@@ -517,83 +598,10 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
             const SizedBox(height: 16),
 
-            // 증상 아이콘 그리드
-            Column(
-              children: [
-                SizedBox(
-                  height: 280,
-                  child: PageView.builder(
-                    controller: _pageController,
-                    onPageChanged: (index) {
-                      setState(() {
-                        _currentPage = index;
-                      });
-                    },
-                    itemCount: _getSymptomPages().length,
-                    itemBuilder: (context, pageIndex) {
-                      final pageSymptoms = _getSymptomPages()[pageIndex];
-                      return GridView.count(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 8,
-                        mainAxisSpacing: 8,
-                        childAspectRatio: 1.0,
-                        children:
-                            pageSymptoms.map((symptom) {
-                              return _buildSymptomCard(
-                                symptom['title'],
-                                symptom['icon'],
-                                symptom['symptom'],
-                              );
-                            }).toList(),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 4),
-                // 페이지 인디케이터
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (_currentPage > 0)
-                      IconButton(
-                        onPressed: () {
-                          _pageController.previousPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        },
-                        icon: const Icon(Icons.arrow_back_ios, size: 20),
-                      ),
-                    ...List.generate(_getSymptomPages().length, (index) {
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color:
-                              _currentPage == index
-                                  ? Colors.green.shade600
-                                  : Colors.grey.shade300,
-                        ),
-                      );
-                    }),
-                    if (_currentPage < _getSymptomPages().length - 1)
-                      IconButton(
-                        onPressed: () {
-                          _pageController.nextPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        },
-                        icon: const Icon(Icons.arrow_forward_ios, size: 20),
-                      ),
-                  ],
-                ),
-              ],
-            ),
+            // 증상 카테고리 또는 세부 증상 표시
+            _selectedCategoryId == null
+                ? _buildCategoryGrid()
+                : _buildSymptomDetailView(),
 
             const SizedBox(height: 16),
 
@@ -863,6 +871,190 @@ class _SearchScreenState extends State<SearchScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCategoryGrid() {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.2,
+      ),
+      itemCount: _symptomCategories.length,
+      itemBuilder: (context, index) {
+        final category = _symptomCategories[index];
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              _selectedCategoryId = category['id'];
+              _currentSymptomCards = List<Map<String, dynamic>>.from(
+                category['symptoms'],
+              );
+              _currentPage = 0;
+            });
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade300),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.shade200,
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  category['icon'],
+                  size: 48,
+                  color: const Color(0xFF174D4D),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  category['title'],
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF174D4D),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  category['description'],
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${category['symptoms'].length}개 증상',
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSymptomDetailView() {
+    return Column(
+      children: [
+        // 뒤로가기 버튼과 카테고리 제목
+        Row(
+          children: [
+            IconButton(
+              onPressed: () {
+                setState(() {
+                  _selectedCategoryId = null;
+                  _currentSymptomCards.clear();
+                  _currentPage = 0;
+                });
+              },
+              icon: const Icon(Icons.arrow_back, color: Color(0xFF174D4D)),
+            ),
+            Expanded(
+              child: Text(
+                _symptomCategories.firstWhere(
+                  (cat) => cat['id'] == _selectedCategoryId,
+                )['title'],
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF174D4D),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // 세부 증상 그리드
+        SizedBox(
+          height: 280,
+          child: PageView.builder(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentPage = index;
+              });
+            },
+            itemCount: _getSymptomPages().length,
+            itemBuilder: (context, pageIndex) {
+              final pageSymptoms = _getSymptomPages()[pageIndex];
+              return GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 3,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                childAspectRatio: 1.0,
+                children:
+                    pageSymptoms.map((symptom) {
+                      return _buildSymptomCard(
+                        symptom['title'],
+                        symptom['icon'],
+                        symptom['symptom'],
+                      );
+                    }).toList(),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 4),
+
+        // 페이지 인디케이터
+        if (_getSymptomPages().length > 1)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (_currentPage > 0)
+                IconButton(
+                  onPressed: () {
+                    _pageController.previousPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  icon: const Icon(Icons.arrow_back_ios, size: 20),
+                ),
+              ...List.generate(_getSymptomPages().length, (index) {
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color:
+                        _currentPage == index
+                            ? Colors.green.shade600
+                            : Colors.grey.shade300,
+                  ),
+                );
+              }),
+              if (_currentPage < _getSymptomPages().length - 1)
+                IconButton(
+                  onPressed: () {
+                    _pageController.nextPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  icon: const Icon(Icons.arrow_forward_ios, size: 20),
+                ),
+            ],
+          ),
+      ],
     );
   }
 
