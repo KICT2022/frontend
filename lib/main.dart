@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:io';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -27,8 +29,19 @@ void main() async {
   // SharedPreferences 초기화
   await SharedPreferences.getInstance();
 
-  // 알림 서비스 초기화
-  await NotificationService.initialize();
+  // 알림 서비스 초기화 (권한 요청은 나중에)
+  await NotificationService.initialize(requestPermissions: false);
+
+  // 성능 최적화를 위한 설정
+  if (Platform.isAndroid) {
+    // Android에서 렌더링 성능 개선
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: Colors.transparent,
+      ),
+    );
+  }
 
   runApp(const MyApp());
 }
@@ -51,6 +64,13 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.blue,
           fontFamily: 'NotoSansKR',
+          // 성능 최적화를 위한 설정
+          useMaterial3: true,
+          // 스크롤 성능 개선
+          scrollbarTheme: ScrollbarThemeData(
+            thumbColor: MaterialStateProperty.all(Colors.grey.shade400),
+            trackColor: MaterialStateProperty.all(Colors.grey.shade200),
+          ),
           appBarTheme: const AppBarTheme(
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
@@ -91,6 +111,9 @@ class MyApp extends StatelessWidget {
         ),
         routerConfig: _createRouter(),
         debugShowCheckedModeBanner: false,
+        // 성능 최적화 옵션
+        showPerformanceOverlay: false,
+        showSemanticsDebugger: false,
       ),
     );
   }
@@ -98,6 +121,14 @@ class MyApp extends StatelessWidget {
   GoRouter _createRouter() {
     return GoRouter(
       initialLocation: '/',
+      redirect: (context, state) {
+        // 알림 클릭으로 인한 딥링크 처리
+        final uri = state.uri;
+        if (uri.queryParameters.containsKey('notification')) {
+          return '/notifications';
+        }
+        return null;
+      },
       routes: [
         GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
         GoRoute(

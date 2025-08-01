@@ -1836,133 +1836,169 @@ class _MedicationScreenState extends State<MedicationScreen> {
 
   // 알림 테스트 메서드들
   void _testImmediateNotification() async {
-    await NotificationService.scheduleMedicationReminder(
-      id: 99999,
-      medicationName: '테스트 약',
-      scheduledDate: DateTime.now().add(Duration(seconds: 2)),
-      note: '즉시 알림 테스트',
-    );
+    try {
+      // 즉시 알림 테스트
+      await NotificationService.showTestNotification();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('2초 후 즉시 알림이 발송됩니다!'),
-        backgroundColor: Colors.green.shade600,
-      ),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('즉시 알림이 발송되었습니다!'),
+          backgroundColor: Colors.green.shade600,
+        ),
+      );
+    } catch (e) {
+      print('즉시 알림 테스트 오류: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('알림 설정 중 오류가 발생했습니다: $e'),
+          backgroundColor: Colors.red.shade600,
+        ),
+      );
+    }
   }
 
   void _test5MinuteNotification() async {
-    final testTime = DateTime.now().add(Duration(seconds: 5));
+    try {
+      final testTime = DateTime.now().add(Duration(seconds: 5));
 
-    await NotificationService.schedulePreMedicationReminder(
-      id: 99998,
-      medicationName: '테스트 약',
-      medicationTime: testTime,
-      note: '5초 후 알림 테스트',
-    );
+      await NotificationService.schedulePreMedicationReminder(
+        id: 99998,
+        medicationName: '테스트 약',
+        medicationTime: testTime,
+        note: '5초 후 알림 테스트',
+      );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('5초 후 준비 알림이 발송됩니다!'),
-        backgroundColor: Colors.orange.shade600,
-      ),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('5초 후 준비 알림이 발송됩니다!'),
+          backgroundColor: Colors.orange.shade600,
+        ),
+      );
+    } catch (e) {
+      print('5초 후 알림 테스트 오류: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('알림 설정 중 오류가 발생했습니다: $e'),
+          backgroundColor: Colors.red.shade600,
+        ),
+      );
+    }
   }
 
   void _showPendingNotifications() async {
-    final pendingNotifications =
-        await NotificationService.getPendingNotifications();
+    try {
+      final pendingNotifications =
+          await NotificationService.getPendingNotifications();
 
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(
-            '예약된 알림 목록',
-            style: TextStyle(
-              color: Color(0xFF174D4D),
-              fontWeight: FontWeight.bold,
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text(
+              '예약된 알림 목록',
+              style: TextStyle(
+                color: Color(0xFF174D4D),
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          content: Container(
-            width: double.maxFinite,
-            height: 300,
-            child:
-                pendingNotifications.isEmpty
-                    ? Center(
-                      child: Text(
-                        '예약된 알림이 없습니다.',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey.shade600,
+            content: Container(
+              width: double.maxFinite,
+              height: 300,
+              child:
+                  pendingNotifications.isEmpty
+                      ? Center(
+                        child: Text(
+                          '예약된 알림이 없습니다.',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey.shade600,
+                          ),
                         ),
-                      ),
-                    )
-                    : ListView.builder(
-                      itemCount: pendingNotifications.length,
-                      itemBuilder: (context, index) {
-                        final notification = pendingNotifications[index];
-                        return Card(
-                          margin: EdgeInsets.only(bottom: 8),
-                          child: ListTile(
-                            title: Text(
-                              notification.title ?? '제목 없음',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(notification.body ?? '내용 없음'),
-                                SizedBox(height: 4),
-                                Text(
-                                  'ID: ${notification.id}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
+                      )
+                      : ListView.builder(
+                        itemCount: pendingNotifications.length,
+                        itemBuilder: (context, index) {
+                          final notification = pendingNotifications[index];
+                          return Card(
+                            margin: EdgeInsets.only(bottom: 8),
+                            child: ListTile(
+                              title: Text(
+                                notification.title ?? '제목 없음',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(notification.body ?? '내용 없음'),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'ID: ${notification.id}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            leading: CircleAvatar(
-                              backgroundColor: Color(0xFF174D4D),
-                              child: Text(
-                                '${notification.id}',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
+                                ],
+                              ),
+                              leading: CircleAvatar(
+                                backgroundColor: Color(0xFF174D4D),
+                                child: Text(
+                                  '${notification.id}',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('닫기'),
+                          );
+                        },
+                      ),
             ),
-            ElevatedButton(
-              onPressed: () async {
-                await NotificationService.cancelAllNotifications();
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('모든 알림이 취소되었습니다.'),
-                    backgroundColor: Colors.red.shade600,
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade600,
-                foregroundColor: Colors.white,
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('닫기'),
               ),
-              child: Text('모든 알림 취소'),
-            ),
-          ],
-        );
-      },
-    );
+              ElevatedButton(
+                onPressed: () async {
+                  try {
+                    await NotificationService.cancelAllNotifications();
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('모든 알림이 취소되었습니다.'),
+                        backgroundColor: Colors.red.shade600,
+                      ),
+                    );
+                  } catch (e) {
+                    print('모든 알림 취소 오류: $e');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('알림 취소 중 오류가 발생했습니다: $e'),
+                        backgroundColor: Colors.red.shade600,
+                      ),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red.shade600,
+                  foregroundColor: Colors.white,
+                ),
+                child: Text('모든 알림 취소'),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (e) {
+      print('예약된 알림 확인 오류: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('예약된 알림을 불러오는 중 오류가 발생했습니다: $e'),
+          backgroundColor: Colors.red.shade600,
+        ),
+      );
+    }
   }
 }

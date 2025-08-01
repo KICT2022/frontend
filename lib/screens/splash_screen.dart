@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
+import '../utils/notification_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -24,8 +25,11 @@ class _SplashScreenState extends State<SplashScreen> {
     try {
       // Provider에 안전하게 접근
       final authProvider = context.read<AuthProvider>();
-      
+
       await authProvider.checkLoginStatus();
+
+      // 알림 권한 요청
+      await NotificationService.initialize(requestPermissions: true);
 
       if (mounted) {
         if (authProvider.isLoggedIn) {
@@ -65,7 +69,7 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             ),
             const SizedBox(height: 30),
-            
+
             // 앱 이름
             const Text(
               '방구석 약사',
@@ -78,13 +82,10 @@ class _SplashScreenState extends State<SplashScreen> {
             const SizedBox(height: 8),
             Text(
               '언제 어디서나 건강한 복약 관리',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
             ),
             const SizedBox(height: 50),
-            
+
             // 로딩 인디케이터
             SizedBox(
               width: 40,
@@ -99,4 +100,4 @@ class _SplashScreenState extends State<SplashScreen> {
       ),
     );
   }
-} 
+}
