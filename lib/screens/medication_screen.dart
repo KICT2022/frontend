@@ -224,7 +224,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
         ),
       ),
       bottomNavigationBar: BottomNavigation(
-        currentIndex: 3,
+        currentIndex: 2,
         onTap: (index) {
           switch (index) {
             case 0:
