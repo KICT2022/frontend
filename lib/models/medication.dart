@@ -107,7 +107,7 @@ class MedicationSchedule {
   final String medicationId;
   final String medicationName;
   final TimeOfDay time;
-  final List<int> daysOfWeek; // 1=월요일, 2=화요일, ...
+  final List<int> daysOfWeek; // 1=월요일, 2=화요일, ...,
   final bool isActive;
   final String? note;
 
@@ -196,6 +196,145 @@ class MedicationReminder {
       'isActive': isActive,
       'isVoiceEnabled': isVoiceEnabled,
       'message': message,
+    };
+  }
+}
+
+// 복용 완료 상태를 관리하는 클래스
+class MedicationDosage {
+  final String id;
+  final String medicationId;
+  final String medicationName;
+  final TimeOfDay time;
+  final bool isCompleted;
+  final DateTime? completedAt;
+  final String? note;
+
+  MedicationDosage({
+    required this.id,
+    required this.medicationId,
+    required this.medicationName,
+    required this.time,
+    this.isCompleted = false,
+    this.completedAt,
+    this.note,
+  });
+
+  MedicationDosage copyWith({
+    String? id,
+    String? medicationId,
+    String? medicationName,
+    TimeOfDay? time,
+    bool? isCompleted,
+    DateTime? completedAt,
+    String? note,
+  }) {
+    return MedicationDosage(
+      id: id ?? this.id,
+      medicationId: medicationId ?? this.medicationId,
+      medicationName: medicationName ?? this.medicationName,
+      time: time ?? this.time,
+      isCompleted: isCompleted ?? this.isCompleted,
+      completedAt: completedAt ?? this.completedAt,
+      note: note ?? this.note,
+    );
+  }
+
+  factory MedicationDosage.fromJson(Map<String, dynamic> json) {
+    return MedicationDosage(
+      id: json['id'],
+      medicationId: json['medicationId'],
+      medicationName: json['medicationName'],
+      time: TimeOfDay(
+        hour: json['time']['hour'],
+        minute: json['time']['minute'],
+      ),
+      isCompleted: json['isCompleted'] ?? false,
+      completedAt:
+          json['completedAt'] != null
+              ? DateTime.parse(json['completedAt'])
+              : null,
+      note: json['note'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'medicationId': medicationId,
+      'medicationName': medicationName,
+      'time': {'hour': time.hour, 'minute': time.minute},
+      'isCompleted': isCompleted,
+      'completedAt': completedAt?.toIso8601String(),
+      'note': note,
+    };
+  }
+}
+
+// 통합된 약 알림 클래스 (같은 약의 여러 시간대를 하나로 묶음)
+class IntegratedMedicationReminder {
+  final String medicationId;
+  final String medicationName;
+  final List<MedicationDosage> dosages;
+  final String? note;
+  final bool isActive;
+
+  IntegratedMedicationReminder({
+    required this.medicationId,
+    required this.medicationName,
+    required this.dosages,
+    this.note,
+    this.isActive = true,
+  });
+
+  // 오늘 복용해야 할 총 횟수
+  int get totalDosages => dosages.length;
+
+  // 완료된 복용 횟수
+  int get completedDosages => dosages.where((d) => d.isCompleted).length;
+
+  // 완료율
+  double get completionRate =>
+      totalDosages > 0 ? completedDosages / totalDosages : 0.0;
+
+  // 모든 복용이 완료되었는지
+  bool get isFullyCompleted => completedDosages == totalDosages;
+
+  factory IntegratedMedicationReminder.fromDosages(
+    List<MedicationDosage> dosages,
+  ) {
+    if (dosages.isEmpty) {
+      throw ArgumentError('Dosages cannot be empty');
+    }
+
+    final firstDosage = dosages.first;
+    return IntegratedMedicationReminder(
+      medicationId: firstDosage.medicationId,
+      medicationName: firstDosage.medicationName,
+      dosages: dosages,
+    );
+  }
+
+  factory IntegratedMedicationReminder.fromJson(Map<String, dynamic> json) {
+    return IntegratedMedicationReminder(
+      medicationId: json['medicationId'],
+      medicationName: json['medicationName'],
+      dosages:
+          (json['dosages'] as List)
+              .map((d) => MedicationDosage.fromJson(d))
+              .toList(),
+      note: json['note'],
+      isActive: json['isActive'] ?? true,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'medicationId': medicationId,
+      'medicationName': medicationName,
+      'dosages': dosages.map((d) => d.toJson()).toList(),
+      'note': note,
+      'isActive': isActive,
     };
   }
 }
