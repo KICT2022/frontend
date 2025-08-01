@@ -58,6 +58,9 @@ dependencies:
   
   # 시간대 처리
   timezone: ^0.9.4
+  
+  # 로컬 알림
+  flutter_local_notifications: ^17.0.0
 
 dev_dependencies:
   flutter_test:

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/notification_provider.dart';
 import '../providers/reminder_provider.dart';
+import '../utils/notification_service.dart';
 
 import '../widgets/bottom_navigation.dart';
 
@@ -120,6 +121,9 @@ class _MedicationScreenState extends State<MedicationScreen> {
                       ),
                       const SizedBox(height: 20),
                       _buildMedicationSchedule(),
+                      const SizedBox(height: 20),
+                      // 오늘의 복용 완료 체크
+                      _buildTodayCompletionSection(),
                     ],
                   ),
                 ),
@@ -137,7 +141,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '복약 알림 설정',
+                        '복약 일정',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -170,7 +174,80 @@ class _MedicationScreenState extends State<MedicationScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text('알림 추가하기'),
+                          child: const Text('일정 추가하기'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // 디버그: 알림 테스트 버튼 (개발용)
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                elevation: 8,
+                color: Colors.white,
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '알림 테스트 (개발용)',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF174D4D),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: _testImmediateNotification,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green.shade600,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: Text('즉시 알림 테스트'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: _test5MinuteNotification,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.orange.shade600,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: Text('5초 후 알림 테스트'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _showPendingNotifications,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue.shade600,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text('예약된 알림 확인'),
                         ),
                       ),
                     ],
@@ -210,9 +287,6 @@ class _MedicationScreenState extends State<MedicationScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      // 오늘의 복용 완료 버튼
-                      _buildTodayCompletionButton(),
-                      const SizedBox(height: 20),
                       // 월간 달성률 스탬프 그리드
                       _buildMonthlyAchievementGrid(),
                     ],
@@ -660,39 +734,149 @@ class _MedicationScreenState extends State<MedicationScreen> {
   }
 
   Widget _buildReminderItem(Map<String, dynamic> reminder) {
+    final textParts = reminder['text'].split(' • ');
+    final medicationName = textParts.isNotEmpty ? textParts[0] : '';
+    final daysText = textParts.length > 1 ? textParts[1] : '';
+    final timeText = textParts.length > 2 ? textParts[2] : '';
+    final noteText = textParts.length > 3 ? textParts[3] : '';
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade100,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              reminder['text'],
-              style: TextStyle(fontSize: 14, height: 1.3),
-              softWrap: true,
-              overflow: TextOverflow.visible,
-            ),
-          ),
-          const SizedBox(width: 8),
           Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
-                icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
-                onPressed: () => _showAddReminderDialog(reminder),
-                padding: EdgeInsets.zero,
-                constraints: BoxConstraints(minWidth: 32, minHeight: 32),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Color(0xFF174D4D).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.medication,
+                  size: 20,
+                  color: Color(0xFF174D4D),
+                ),
               ),
-              IconButton(
-                icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                onPressed: () => _deleteReminder(reminder['id']),
-                padding: EdgeInsets.zero,
-                constraints: BoxConstraints(minWidth: 32, minHeight: 32),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      medicationName,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF174D4D),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.schedule,
+                          size: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          timeText,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(
+                          Icons.calendar_today,
+                          size: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          daysText,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (noteText.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 14,
+                            color: Colors.grey.shade600,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              noteText,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: IconButton(
+                  icon: Icon(Icons.edit, color: Colors.blue.shade700, size: 18),
+                  onPressed: () => _showAddReminderDialog(reminder),
+                  tooltip: '수정',
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    Icons.delete,
+                    color: Colors.red.shade700,
+                    size: 18,
+                  ),
+                  onPressed: () => _showDeleteConfirmDialog(reminder['id']),
+                  tooltip: '삭제',
+                ),
               ),
             ],
           ),
@@ -1191,6 +1375,54 @@ class _MedicationScreenState extends State<MedicationScreen> {
     );
   }
 
+  // 삭제 확인 다이얼로그를 보여주는 메서드
+  void _showDeleteConfirmDialog(int id) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.warning, color: Colors.orange.shade600, size: 24),
+              const SizedBox(width: 8),
+              Text(
+                '일정 삭제',
+                style: TextStyle(
+                  color: Color(0xFF174D4D),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            '이 복약 일정을 삭제하시겠습니까?\n삭제된 일정은 복구할 수 없습니다.',
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('취소', style: TextStyle(color: Colors.grey.shade600)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _deleteReminder(id);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade600,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text('삭제'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // 알림을 삭제하는 메서드
   void _deleteReminder(int id) {
     final reminderProvider = Provider.of<ReminderProvider>(
@@ -1200,7 +1432,18 @@ class _MedicationScreenState extends State<MedicationScreen> {
     reminderProvider.deleteReminder(id);
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('알림이 삭제되었습니다.'), backgroundColor: Colors.orange),
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Text('일정이 삭제되었습니다.'),
+          ],
+        ),
+        backgroundColor: Colors.orange.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
     );
   }
 
@@ -1279,92 +1522,154 @@ class _MedicationScreenState extends State<MedicationScreen> {
     );
   }
 
-  Widget _buildTodayCompletionButton() {
-    final now = DateTime.now();
+  // 오늘의 복용 완료 섹션을 만드는 메서드
+  Widget _buildTodayCompletionSection() {
+    return Consumer<ReminderProvider>(
+      builder: (context, reminderProvider, child) {
+        if (reminderProvider.reminders.isEmpty) {
+          return SizedBox.shrink(); // 알림이 없으면 아무것도 표시하지 않음
+        }
 
-    // 오늘 복용 완료 여부 확인 (실제로는 데이터베이스에서 확인)
-    bool isTodayCompleted = false; // 샘플 데이터
+        // 오늘 복용해야 하는 모든 시간대를 계산
+        int totalRequiredDoses = 0;
+        int completedDoses = 0;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isTodayCompleted ? Colors.green.shade50 : Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color:
-              isTodayCompleted ? Colors.green.shade200 : Colors.blue.shade200,
-          width: 2,
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+        for (final reminder in reminderProvider.reminders) {
+          final times = _parseTimesFromText(reminder['text']);
+          final today = DateTime.now();
+          final todayWeekday = _getKoreanWeekday(today.weekday);
+          final days = List<String>.from(reminder['days']);
+
+          if (days.contains(todayWeekday)) {
+            for (final time in times) {
+              final timeOfDay = _getTimeOfDay(
+                '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
+              );
+              totalRequiredDoses++;
+              if (reminderProvider.isCompleted(reminder['id'], timeOfDay)) {
+                completedDoses++;
+              }
+            }
+          }
+        }
+
+        final bool isAllCompleted =
+            totalRequiredDoses > 0 && completedDoses == totalRequiredDoses;
+        final double completionRate =
+            totalRequiredDoses > 0 ? completedDoses / totalRequiredDoses : 0.0;
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isAllCompleted ? Colors.green.shade50 : Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color:
+                  isAllCompleted ? Colors.green.shade200 : Colors.blue.shade200,
+              width: 2,
+            ),
+          ),
+          child: Column(
             children: [
-              Icon(
-                isTodayCompleted ? Icons.check_circle : Icons.medication,
-                size: 24,
-                color:
-                    isTodayCompleted
-                        ? Colors.green.shade600
-                        : Colors.blue.shade600,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    isAllCompleted ? Icons.check_circle : Icons.medication,
+                    size: 24,
+                    color:
+                        isAllCompleted
+                            ? Colors.green.shade600
+                            : Colors.blue.shade600,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    isAllCompleted ? '오늘 복용 완료!' : '오늘의 복용 현황',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color:
+                          isAllCompleted
+                              ? Colors.green.shade700
+                              : Colors.blue.shade700,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Text(
-                isTodayCompleted ? '오늘 복용 완료!' : '오늘의 약 복용하기',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color:
-                      isTodayCompleted
-                          ? Colors.green.shade700
-                          : Colors.blue.shade700,
+              const SizedBox(height: 12),
+              // 진행률 표시
+              if (totalRequiredDoses > 0) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '$completedDoses/$totalRequiredDoses 복용',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color:
+                            isAllCompleted
+                                ? Colors.green.shade700
+                                : Colors.blue.shade700,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      '(${(completionRate * 100).toInt()}%)',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color:
+                            isAllCompleted
+                                ? Colors.green.shade600
+                                : Colors.blue.shade600,
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 12),
+                // 진행률 바
+                Container(
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: completionRate,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color:
+                            isAllCompleted
+                                ? Colors.green.shade500
+                                : Colors.blue.shade500,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              Text(
+                isAllCompleted
+                    ? '오늘 모든 약을 복용하셨습니다! 🎉'
+                    : totalRequiredDoses > 0
+                    ? '위의 체크박스를 눌러 복용을 완료해주세요.'
+                    : '오늘 복용할 약이 없습니다.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color:
+                      isAllCompleted
+                          ? Colors.green.shade600
+                          : Colors.blue.shade600,
+                ),
+                textAlign: TextAlign.center,
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            isTodayCompleted
-                ? '${now.month}월 ${now.day}일 복용을 완료했습니다!'
-                : '오늘(${now.month}월 ${now.day}일) 복용한 약을 체크해주세요.',
-            style: TextStyle(
-              fontSize: 14,
-              color:
-                  isTodayCompleted
-                      ? Colors.green.shade600
-                      : Colors.blue.shade600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                _showTodayCompletionDialog();
-              },
-              icon: Icon(isTodayCompleted ? Icons.check : Icons.add, size: 20),
-              label: Text(
-                isTodayCompleted ? '완료됨' : '복용 완료 체크',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    isTodayCompleted
-                        ? Colors.green.shade600
-                        : Colors.blue.shade600,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -1462,156 +1767,6 @@ class _MedicationScreenState extends State<MedicationScreen> {
     );
   }
 
-  void _showTodayCompletionDialog() {
-    final now = DateTime.now();
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.medication, color: Color(0xFF174D4D), size: 28),
-              const SizedBox(width: 8),
-              Text(
-                '오늘의 복용 완료',
-                style: TextStyle(
-                  color: Color(0xFF174D4D),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${now.month}월 ${now.day}일 복용을 완료하셨나요?',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 16),
-              Consumer<ReminderProvider>(
-                builder: (context, reminderProvider, child) {
-                  final todayMedications = _getTodayMedications(
-                    reminderProvider.reminders,
-                  );
-
-                  if (todayMedications.isEmpty) {
-                    return Text(
-                      '오늘 복용할 약이 없습니다',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade700,
-                      ),
-                    );
-                  }
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children:
-                        todayMedications.map((medication) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 4.0),
-                            child: Text(
-                              '• ${medication['name']} (${medication['time']})',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey.shade700,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.check_circle,
-                      color: Colors.green.shade600,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '복용 완료 시 오늘 날짜에 스탬프가 찍힙니다!',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.green.shade700,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('취소', style: TextStyle(color: Colors.grey.shade600)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                // 실제로는 데이터베이스에 복용 완료 기록을 저장
-                _completeTodayMedication();
-                Navigator.of(context).pop();
-
-                // 성공 메시지 표시
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: [
-                        Icon(Icons.check_circle, color: Colors.white, size: 20),
-                        const SizedBox(width: 8),
-                        Text('오늘의 복용이 완료되었습니다! 🎉'),
-                      ],
-                    ),
-                    backgroundColor: Colors.green.shade600,
-                    duration: const Duration(seconds: 3),
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF174D4D),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Text('복용 완료'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _completeTodayMedication() {
-    // 실제로는 데이터베이스에 복용 완료 기록을 저장하는 로직
-    // 예: Provider를 통해 복용 기록을 업데이트
-    print('오늘의 복용이 완료되었습니다: ${DateTime.now()}');
-
-    // 화면 새로고침 (실제로는 Provider를 통해 상태 업데이트)
-    setState(() {
-      // 상태 업데이트 로직
-    });
-  }
-
   Widget _buildDailyAchievementItem(
     int day,
     int percentage, [
@@ -1676,6 +1831,138 @@ class _MedicationScreenState extends State<MedicationScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  // 알림 테스트 메서드들
+  void _testImmediateNotification() async {
+    await NotificationService.scheduleMedicationReminder(
+      id: 99999,
+      medicationName: '테스트 약',
+      scheduledDate: DateTime.now().add(Duration(seconds: 2)),
+      note: '즉시 알림 테스트',
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('2초 후 즉시 알림이 발송됩니다!'),
+        backgroundColor: Colors.green.shade600,
+      ),
+    );
+  }
+
+  void _test5MinuteNotification() async {
+    final testTime = DateTime.now().add(Duration(seconds: 5));
+
+    await NotificationService.schedulePreMedicationReminder(
+      id: 99998,
+      medicationName: '테스트 약',
+      medicationTime: testTime,
+      note: '5초 후 알림 테스트',
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('5초 후 준비 알림이 발송됩니다!'),
+        backgroundColor: Colors.orange.shade600,
+      ),
+    );
+  }
+
+  void _showPendingNotifications() async {
+    final pendingNotifications =
+        await NotificationService.getPendingNotifications();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            '예약된 알림 목록',
+            style: TextStyle(
+              color: Color(0xFF174D4D),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Container(
+            width: double.maxFinite,
+            height: 300,
+            child:
+                pendingNotifications.isEmpty
+                    ? Center(
+                      child: Text(
+                        '예약된 알림이 없습니다.',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    )
+                    : ListView.builder(
+                      itemCount: pendingNotifications.length,
+                      itemBuilder: (context, index) {
+                        final notification = pendingNotifications[index];
+                        return Card(
+                          margin: EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            title: Text(
+                              notification.title ?? '제목 없음',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(notification.body ?? '내용 없음'),
+                                SizedBox(height: 4),
+                                Text(
+                                  'ID: ${notification.id}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            leading: CircleAvatar(
+                              backgroundColor: Color(0xFF174D4D),
+                              child: Text(
+                                '${notification.id}',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('닫기'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                await NotificationService.cancelAllNotifications();
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('모든 알림이 취소되었습니다.'),
+                    backgroundColor: Colors.red.shade600,
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade600,
+                foregroundColor: Colors.white,
+              ),
+              child: Text('모든 알림 취소'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

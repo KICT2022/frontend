@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import '../utils/notification_service.dart';
 
 class ReminderProvider with ChangeNotifier {
   List<Map<String, dynamic>> _reminders = [];
@@ -28,6 +30,10 @@ class ReminderProvider with ChangeNotifier {
       'days': days,
       'note': note,
     });
+
+    // 푸시 알림 설정
+    _scheduleNotificationsForReminder(newId, medicationName, time, days, note);
+
     notifyListeners();
   }
 
@@ -47,6 +53,9 @@ class ReminderProvider with ChangeNotifier {
 
     final index = _reminders.indexWhere((reminder) => reminder['id'] == id);
     if (index != -1) {
+      // 기존 알림 취소
+      NotificationService.cancelNotification(id);
+
       _reminders[index] = {
         'id': id,
         'text': reminderText,
@@ -54,6 +63,16 @@ class ReminderProvider with ChangeNotifier {
         'days': days,
         'note': note,
       };
+
+      // 새로운 푸시 알림 설정
+      _scheduleNotificationsForReminder(
+        id,
+        medicationName,
+        timeString,
+        days,
+        note,
+      );
+
       notifyListeners();
     }
   }
@@ -76,6 +95,9 @@ class ReminderProvider with ChangeNotifier {
   }
 
   void deleteReminder(int id) {
+    // 알림 취소
+    NotificationService.cancelNotification(id);
+
     _reminders.removeWhere((reminder) => reminder['id'] == id);
     // 해당 알림과 관련된 완료 상태도 삭제
     _completionStatus.removeWhere((key, value) => key.contains('_${id}_'));
@@ -111,5 +133,38 @@ class ReminderProvider with ChangeNotifier {
 
     _completionStatus.removeWhere((key, value) => key.startsWith(dateKey));
     notifyListeners();
+  }
+
+  // 알림에 대한 푸시 알림을 설정하는 메서드
+  void _scheduleNotificationsForReminder(
+    int id,
+    String medicationName,
+    String timeString,
+    List<String> days,
+    String note,
+  ) {
+    // 시간 문자열을 TimeOfDay 리스트로 변환
+    final List<TimeOfDay> times = [];
+    final timeList = timeString.split(', ');
+
+    for (final timeStr in timeList) {
+      final timeParts = timeStr.split(':');
+      if (timeParts.length == 2) {
+        final hour = int.tryParse(timeParts[0]);
+        final minute = int.tryParse(timeParts[1]);
+        if (hour != null && minute != null) {
+          times.add(TimeOfDay(hour: hour, minute: minute));
+        }
+      }
+    }
+
+    // 주간 반복 알림 설정
+    NotificationService.scheduleWeeklyMedicationReminders(
+      baseId: id,
+      medicationName: medicationName,
+      times: times,
+      days: days,
+      note: note.isNotEmpty ? note : null,
+    );
   }
 }
