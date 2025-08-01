@@ -5,6 +5,7 @@ import '../providers/notification_provider.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/bottom_navigation.dart';
 import 'medication_detail_screen.dart';
+import '../models/symptom.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -15,13 +16,10 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   bool _isSymptomInput = true;
-  final List<String> _symptoms = [
-    '머리가 아파요',
-    '허리가 아파요',
-    '심장이 아파요',
-    '목이 아파요',
-    '눈이 아파요',
-  ];
+  final List<String> _selectedSymptoms = [];
+  String? _selectedCategoryId;
+  final TextEditingController _customSymptomController =
+      TextEditingController();
   // 약물 입력 칸 개수를 관리하는 변수 추가
   int _drugInputCount = 2;
   // 약물 입력 칸들의 TextEditingController 리스트
@@ -32,6 +30,7 @@ class _SearchScreenState extends State<SearchScreen> {
   TextEditingController _symptomInputController = TextEditingController();
   // 증상 카드 데이터
   final List<Map<String, dynamic>> _symptomCards = [
+    // 기존 증상들
     {'title': '두통', 'icon': Icons.headset, 'symptom': '머리가 아파요'},
     {'title': '인후통', 'icon': Icons.record_voice_over, 'symptom': '목이 아파요'},
     {'title': '요통', 'icon': Icons.accessibility, 'symptom': '허리가 아파요'},
@@ -44,6 +43,59 @@ class _SearchScreenState extends State<SearchScreen> {
     {'title': '무릎통증', 'icon': Icons.directions_walk, 'symptom': '무릎이 아파요'},
     {'title': '손목통증', 'icon': Icons.pan_tool, 'symptom': '손목이 아파요'},
     {'title': '발목통증', 'icon': Icons.directions_run, 'symptom': '발목이 아파요'},
+
+    // 전신 증상
+    {'title': '발열', 'icon': Icons.thermostat, 'symptom': '열이 남'},
+    {'title': '오한', 'icon': Icons.ac_unit, 'symptom': '몸이 떨림'},
+    {'title': '피로감', 'icon': Icons.bedtime, 'symptom': '무기력 / 피로감'},
+    {'title': '식욕저하', 'icon': Icons.restaurant, 'symptom': '식욕 저하'},
+    {'title': '체중감소', 'icon': Icons.monitor_weight, 'symptom': '체중 감소'},
+
+    // 머리/얼굴
+    {'title': '어지럼증', 'icon': Icons.rotate_right, 'symptom': '어지럼증'},
+    {'title': '눈충혈', 'icon': Icons.visibility, 'symptom': '눈 충혈 / 가려움 / 통증'},
+    {'title': '코막힘', 'icon': Icons.air, 'symptom': '코막힘 / 콧물'},
+    {'title': '귀통증', 'icon': Icons.hearing, 'symptom': '귀 통증 / 이명 / 귀막힘'},
+
+    // 호흡기
+    {'title': '기침', 'icon': Icons.air, 'symptom': '기침'},
+    {'title': '가래', 'icon': Icons.water_drop, 'symptom': '가래'},
+    {'title': '목쉼', 'icon': Icons.record_voice_over, 'symptom': '목 쉼 / 음성 변화'},
+    {'title': '호흡곤란', 'icon': Icons.air, 'symptom': '호흡곤란 / 숨참'},
+
+    // 소화기
+    {'title': '메스꺼움', 'icon': Icons.sick, 'symptom': '메스꺼움 / 구토'},
+    {'title': '설사', 'icon': Icons.water_drop, 'symptom': '설사'},
+    {'title': '변비', 'icon': Icons.block, 'symptom': '변비'},
+    {'title': '속쓰림', 'icon': Icons.local_fire_department, 'symptom': '속 쓰림'},
+    {'title': '트림', 'icon': Icons.air, 'symptom': '트림 / 가스참'},
+    {'title': '소화불량', 'icon': Icons.restaurant, 'symptom': '소화불량'},
+
+    // 근골격계
+    {'title': '근육통', 'icon': Icons.fitness_center, 'symptom': '근육통'},
+    {'title': '목덜미통증', 'icon': Icons.accessibility, 'symptom': '목덜미 통증'},
+    {'title': '팔다리저림', 'icon': Icons.accessibility_new, 'symptom': '팔/다리 저림'},
+
+    // 피부/외형
+    {'title': '피부발진', 'icon': Icons.brush, 'symptom': '피부 발진 / 두드러기'},
+    {'title': '가려움증', 'icon': Icons.touch_app, 'symptom': '가려움증'},
+    {'title': '부종', 'icon': Icons.water_drop, 'symptom': '부종 (붓기)'},
+    {'title': '멍', 'icon': Icons.healing, 'symptom': '멍 / 외상'},
+
+    // 비뇨기/생식기
+    {'title': '배뇨통', 'icon': Icons.wc, 'symptom': '소변 시 통증 (배뇨통)'},
+    {'title': '빈뇨', 'icon': Icons.water_drop, 'symptom': '빈뇨 / 야뇨'},
+    {'title': '생리통', 'icon': Icons.female, 'symptom': '생리통 / 생리불순'},
+    {'title': '질분비물', 'icon': Icons.female, 'symptom': '질 분비물 증가'},
+    {'title': '음경가려움', 'icon': Icons.male, 'symptom': '음경 가려움 / 통증'},
+
+    // 신경/정신
+    {'title': '불면증', 'icon': Icons.bedtime, 'symptom': '불면증'},
+    {'title': '불안감', 'icon': Icons.psychology, 'symptom': '불안감 / 초조함'},
+    {'title': '우울감', 'icon': Icons.sentiment_dissatisfied, 'symptom': '우울감'},
+    {'title': '집중력저하', 'icon': Icons.center_focus_strong, 'symptom': '집중력 저하'},
+    {'title': '기억력저하', 'icon': Icons.psychology, 'symptom': '기억력 저하'},
+    {'title': '경련', 'icon': Icons.flash_on, 'symptom': '경련 / 발작'},
   ];
   // 페이지 컨트롤러
   late PageController _pageController;
@@ -81,6 +133,7 @@ class _SearchScreenState extends State<SearchScreen> {
       controller.dispose();
     }
     _symptomInputController.dispose();
+    _customSymptomController.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -145,6 +198,52 @@ class _SearchScreenState extends State<SearchScreen> {
       );
       medicationProvider.addSymptom(symptom);
       _symptomInputController.clear();
+    }
+  }
+
+  void _addSymptom(String symptomId) {
+    setState(() {
+      if (!_selectedSymptoms.contains(symptomId)) {
+        _selectedSymptoms.add(symptomId);
+      }
+    });
+  }
+
+  void _removeSymptom(String symptomId) {
+    setState(() {
+      _selectedSymptoms.remove(symptomId);
+    });
+  }
+
+  void _addCustomSymptom() {
+    if (_customSymptomController.text.trim().isNotEmpty) {
+      setState(() {
+        _selectedSymptoms.add(_customSymptomController.text.trim());
+        _customSymptomController.clear();
+      });
+    }
+  }
+
+  IconData _getCategoryIcon(String categoryId) {
+    switch (categoryId) {
+      case 'general':
+        return Icons.thermostat;
+      case 'head_face':
+        return Icons.face;
+      case 'respiratory':
+        return Icons.air;
+      case 'digestive':
+        return Icons.restaurant;
+      case 'musculoskeletal':
+        return Icons.accessibility;
+      case 'skin':
+        return Icons.brush;
+      case 'urological':
+        return Icons.wc;
+      case 'neurological':
+        return Icons.psychology;
+      default:
+        return Icons.medical_services;
     }
   }
 
