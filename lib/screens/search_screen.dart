@@ -941,32 +941,15 @@ class _SearchScreenState extends State<SearchScreen> {
                             size: 32,
                             color: const Color(0xFF174D4D),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 8),
                           Text(
                             category['title'],
                             style: const TextStyle(
-                              fontSize: 13,
+                              fontSize: 14,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF174D4D),
                             ),
                             textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            category['description'],
-                            style: TextStyle(
-                              fontSize: 9,
-                              color: Colors.grey.shade600,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${category['symptoms'].length}개 증상',
-                            style: TextStyle(
-                              fontSize: 8,
-                              color: Colors.grey.shade500,
-                            ),
                           ),
                         ],
                       ),
