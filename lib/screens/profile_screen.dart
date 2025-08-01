@@ -222,52 +222,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    elevation: 8,
-                    color: Colors.white,
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            '보호자 등록',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF174D4D),
-                            ),
-                          ),
-                          if (user.guardian != null) ...[
-                            const SizedBox(height: 8),
-                            Text('보호자 이름: ${user.guardian!.name}'),
-                            Text('관계: ${user.guardian!.relationship}'),
-                            Text('전화번호: ${user.guardian!.phoneNumber}'),
-                          ],
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              onPressed: () {},
-                              icon: const Icon(Icons.camera_alt),
-                              label: const Text('보호자 추가'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF174D4D),
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
