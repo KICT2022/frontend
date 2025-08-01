@@ -819,25 +819,25 @@ class _SearchScreenState extends State<SearchScreen> {
 다음 증상들을 모두 고려하여 가장 적합한 약물 3가지 이상을 추천해주세요: $selectedSymptoms
 
 모든 증상을 종합적으로 분석하여 가장 효과적인 약물을 추천해주세요.
-각 약물의 정보는 다음 형식으로 작성해주되, 항목명은 제외하고 내용만 작성해주세요:
+각 약물의 정보는 다음 형식으로 정확히 작성해주세요:
 
-1. [정확한 약물명]
-   [약물의 효능과 작용에 대한 상세한 설명]
-   [구체적인 복용 방법과 용량 정보]
-   [복용 시 주의해야 할 사항들]
-   [주요 부작용과 부정적 반응]
+1. **약물명:** [정확한 약물명]
+   **효능/작용:** [약물의 효능과 작용에 대한 상세한 설명]
+   **복용법:** [구체적인 복용 방법과 용량 정보]
+   **주의사항:** [복용 시 주의해야 할 사항들]
+   **부작용:** [주요 부작용과 부정적 반응]
 
-2. [정확한 약물명]
-   [약물의 효능과 작용에 대한 상세한 설명]
-   [구체적인 복용 방법과 용량 정보]
-   [복용 시 주의해야 할 사항들]
-   [주요 부작용과 부정적 반응]
+2. **약물명:** [정확한 약물명]
+   **효능/작용:** [약물의 효능과 작용에 대한 상세한 설명]
+   **복용법:** [구체적인 복용 방법과 용량 정보]
+   **주의사항:** [복용 시 주의해야 할 사항들]
+   **부작용:** [주요 부작용과 부정적 반응]
 
-3. [정확한 약물명]
-   [약물의 효능과 작용에 대한 상세한 설명]
-   [구체적인 복용 방법과 용량 정보]
-   [복용 시 주의해야 할 사항들]
-   [주요 부작용과 부정적 반응]
+3. **약물명:** [정확한 약물명]
+   **효능/작용:** [약물의 효능과 작용에 대한 상세한 설명]
+   **복용법:** [구체적인 복용 방법과 용량 정보]
+   **주의사항:** [복용 시 주의해야 할 사항들]
+   **부작용:** [주요 부작용과 부정적 반응]
 
 증상이 아닌 실제 약물명을 추천해주시고, 각 약물의 정보를 명확히 구분해서 작성해주세요.
 서로 다른 부위의 증상이 있어도 모든 증상을 종합적으로 고려하여 가장 적합한 약물을 추천해주세요.
@@ -935,7 +935,24 @@ class _SearchScreenState extends State<SearchScreen> {
     // 결과 텍스트를 줄바꿈으로 분리
     List<String> lines = result.split('\n');
     Map<String, String> currentMedication = {};
-    int currentSection = 0; // 0: 이름, 1: 효능, 2: 복용법, 3: 주의사항, 4: 부작용
+
+    // 약물 정보 섹션 키워드
+    final Map<String, List<String>> sectionKeywords = {
+      'name': ['**약물명:', '약물명:', '약명:', '약:', '약물:'],
+      'description': [
+        '**효능/작용:',
+        '효능/작용:',
+        '효능:',
+        '효과:',
+        '작용:',
+        '**효능:',
+        '**효과:',
+        '**작용:',
+      ],
+      'usage': ['**복용법:', '복용법:', '용법:', '투여법:', '**용법:', '**투여법:'],
+      'precautions': ['**주의사항:', '주의사항:', '주의:', '금기:', '**주의:', '**금기:'],
+      'sideEffects': ['**부작용:', '부작용:', '**부작용:'],
+    };
 
     for (String line in lines) {
       line = line.trim();
@@ -958,47 +975,47 @@ class _SearchScreenState extends State<SearchScreen> {
           'sideEffects': '',
           'precautions': '',
         };
-        currentSection = 0; // 이름 다음부터 시작
       } else if (currentMedication.isNotEmpty) {
-        // 현재 섹션에 따라 내용 분류
-        switch (currentSection) {
-          case 0: // 이름 다음 - 효능
-            if (currentMedication['description']!.isEmpty) {
-              currentMedication['description'] = line;
-            } else {
-              currentMedication['description'] =
-                  '${currentMedication['description']}\n$line';
+        // 각 섹션별로 내용 분류
+        bool sectionFound = false;
+
+        for (String section in sectionKeywords.keys) {
+          for (String keyword in sectionKeywords[section]!) {
+            if (line.startsWith(keyword)) {
+              String content =
+                  line.replaceAll(RegExp('^$keyword\\s*'), '').trim();
+              if (content.isNotEmpty) {
+                currentMedication[section] = content;
+              }
+              sectionFound = true;
+              break;
             }
-            break;
-          case 1: // 효능 다음 - 복용법
-            if (currentMedication['usage']!.isEmpty) {
-              currentMedication['usage'] = line;
-            } else {
-              currentMedication['usage'] =
-                  '${currentMedication['usage']}\n$line';
-            }
-            break;
-          case 2: // 복용법 다음 - 주의사항
-            if (currentMedication['precautions']!.isEmpty) {
-              currentMedication['precautions'] = line;
-            } else {
-              currentMedication['precautions'] =
-                  '${currentMedication['precautions']}\n$line';
-            }
-            break;
-          case 3: // 주의사항 다음 - 부작용
-            if (currentMedication['sideEffects']!.isEmpty) {
-              currentMedication['sideEffects'] = line;
-            } else {
-              currentMedication['sideEffects'] =
-                  '${currentMedication['sideEffects']}\n$line';
-            }
-            break;
+          }
+          if (sectionFound) break;
         }
 
-        // 빈 줄을 만나면 다음 섹션으로 이동
-        if (line.isEmpty) {
-          currentSection++;
+        // 섹션 키워드가 없는 경우, 현재 활성 섹션에 추가
+        if (!sectionFound && line.isNotEmpty) {
+          // 마지막으로 업데이트된 섹션에 추가
+          String lastSection = '';
+          if (currentMedication['description']!.isNotEmpty) {
+            lastSection = 'description';
+          } else if (currentMedication['usage']!.isNotEmpty) {
+            lastSection = 'usage';
+          } else if (currentMedication['precautions']!.isNotEmpty) {
+            lastSection = 'precautions';
+          } else if (currentMedication['sideEffects']!.isNotEmpty) {
+            lastSection = 'sideEffects';
+          } else {
+            lastSection = 'description';
+          }
+
+          if (currentMedication[lastSection]!.isNotEmpty) {
+            currentMedication[lastSection] =
+                '${currentMedication[lastSection]}\n$line';
+          } else {
+            currentMedication[lastSection] = line;
+          }
         }
       }
     }
