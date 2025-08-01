@@ -4,6 +4,7 @@ import '../providers/auth_provider.dart';
 import '../providers/notification_provider.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/bottom_navigation.dart';
+import 'pharmacy_map_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -197,9 +198,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
-                              onPressed: () {},
-                              icon: const Icon(Icons.my_location),
-                              label: const Text('현재 위치를 찾기'),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) => const PharmacyMapScreen(),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.map),
+                              label: const Text('약국 찾기'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Color(0xFF174D4D),
                                 foregroundColor: Colors.white,
@@ -266,7 +275,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         },
       ),
       bottomNavigationBar: BottomNavigation(
-        currentIndex: 4,
+        currentIndex: 3,
         onTap: (index) {
           switch (index) {
             case 0:
@@ -276,12 +285,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               context.go('/search');
               break;
             case 2:
-              context.go('/pharmacy-map');
-              break;
-            case 3:
               context.go('/medication');
               break;
-            case 4:
+            case 3:
               // 이미 프로필 화면이므로 아무것도 하지 않음
               break;
           }

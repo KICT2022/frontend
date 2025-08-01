@@ -526,12 +526,9 @@ class _SearchScreenState extends State<SearchScreen> {
               // 이미 검색 화면이므로 아무것도 하지 않음
               break;
             case 2:
-              context.go('/pharmacy-map');
-              break;
-            case 3:
               context.go('/medication');
               break;
-            case 4:
+            case 3:
               context.go('/profile');
               break;
           }

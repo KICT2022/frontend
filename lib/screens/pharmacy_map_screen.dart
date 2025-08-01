@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:go_router/go_router.dart';
-import '../widgets/bottom_navigation.dart';
 
 class PharmacyMapScreen extends StatefulWidget {
   const PharmacyMapScreen({super.key});
@@ -431,28 +429,6 @@ class _PharmacyMapScreenState extends State<PharmacyMapScreen> {
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavigation(
-        currentIndex: 2,
-        onTap: (index) {
-          switch (index) {
-            case 0:
-              context.go('/home');
-              break;
-            case 1:
-              context.go('/search');
-              break;
-            case 2:
-              // 이미 약국 찾기 화면이므로 아무것도 하지 않음
-              break;
-            case 3:
-              context.go('/medication');
-              break;
-            case 4:
-              context.go('/profile');
-              break;
-          }
-        },
       ),
     );
   }
