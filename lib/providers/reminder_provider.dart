@@ -10,6 +10,15 @@ class ReminderProvider with ChangeNotifier {
   List<Map<String, dynamic>> get reminders => _reminders;
   Map<String, bool> get completionStatus => _completionStatus;
 
+  // NotificationProvider에 접근하기 위한 콜백 함수
+  Function(String title, String message, String type)? onNotificationAdded;
+
+  void setNotificationCallback(
+    Function(String title, String message, String type) callback,
+  ) {
+    onNotificationAdded = callback;
+  }
+
   void addReminder(
     String medicationName,
     String time,
@@ -33,6 +42,9 @@ class ReminderProvider with ChangeNotifier {
 
     // 푸시 알림 설정
     _scheduleNotificationsForReminder(newId, medicationName, time, days, note);
+
+    // 복약 일정 추가 완료 알림
+    _showScheduleAddedNotification(medicationName, time, days);
 
     notifyListeners();
   }
@@ -73,6 +85,9 @@ class ReminderProvider with ChangeNotifier {
         note,
       );
 
+      // 복약 일정 수정 완료 알림
+      _showScheduleUpdatedNotification(medicationName, timeString, days);
+
       notifyListeners();
     }
   }
@@ -95,12 +110,24 @@ class ReminderProvider with ChangeNotifier {
   }
 
   void deleteReminder(int id) {
+    // 삭제할 알림 정보 저장
+    final reminderToDelete = _reminders.firstWhere(
+      (reminder) => reminder['id'] == id,
+      orElse: () => {},
+    );
+
     // 알림 취소
     NotificationService.cancelNotification(id);
 
     _reminders.removeWhere((reminder) => reminder['id'] == id);
     // 해당 알림과 관련된 완료 상태도 삭제
     _completionStatus.removeWhere((key, value) => key.contains('_${id}_'));
+
+    // 복약 일정 삭제 완료 알림
+    if (reminderToDelete.isNotEmpty) {
+      _showScheduleDeletedNotification(reminderToDelete['text'] ?? '알 수 없는 약');
+    }
+
     notifyListeners();
   }
 
@@ -166,5 +193,68 @@ class ReminderProvider with ChangeNotifier {
       days: days,
       note: note.isNotEmpty ? note : null,
     );
+  }
+
+  // 복약 일정 추가 완료 알림을 표시하는 메서드
+  void _showScheduleAddedNotification(
+    String medicationName,
+    String time,
+    List<String> days,
+  ) {
+    final daysText = _formatDaysText(days);
+    final notificationText =
+        '${medicationName} • ${daysText} • ${time} 복용 알림이 설정되었습니다.';
+
+    NotificationService.showNotification(
+      id: DateTime.now().millisecondsSinceEpoch % 100000, // 고유 ID 생성
+      title: '알림 설정 완료',
+      body: notificationText,
+      payload: 'schedule_added',
+    );
+
+    // 앱 내 알림 목록에도 추가
+    if (onNotificationAdded != null) {
+      onNotificationAdded!('알림 설정 완료', notificationText, 'medication');
+    }
+  }
+
+  // 복약 일정 수정 완료 알림을 표시하는 메서드
+  void _showScheduleUpdatedNotification(
+    String medicationName,
+    String time,
+    List<String> days,
+  ) {
+    final daysText = _formatDaysText(days);
+    final notificationText =
+        '${medicationName} • ${daysText} • ${time} 복용 알림이 수정되었습니다.';
+
+    NotificationService.showNotification(
+      id: (DateTime.now().millisecondsSinceEpoch + 1) % 100000, // 고유 ID 생성
+      title: '알림 수정 완료',
+      body: notificationText,
+      payload: 'schedule_updated',
+    );
+
+    // 앱 내 알림 목록에도 추가
+    if (onNotificationAdded != null) {
+      onNotificationAdded!('알림 수정 완료', notificationText, 'medication');
+    }
+  }
+
+  // 복약 일정 삭제 완료 알림을 표시하는 메서드
+  void _showScheduleDeletedNotification(String medicationName) {
+    final notificationText = '${medicationName} 복용 알림이 삭제되었습니다. 알림이 취소되었습니다.';
+
+    NotificationService.showNotification(
+      id: (DateTime.now().millisecondsSinceEpoch + 2) % 100000, // 고유 ID 생성
+      title: '알림 삭제 완료',
+      body: notificationText,
+      payload: 'schedule_deleted',
+    );
+
+    // 앱 내 알림 목록에도 추가
+    if (onNotificationAdded != null) {
+      onNotificationAdded!('알림 삭제 완료', notificationText, 'medication');
+    }
   }
 }

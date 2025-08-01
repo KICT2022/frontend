@@ -23,6 +23,16 @@ import 'screens/medication_search_result_screen.dart';
 import 'screens/profile_edit_screen.dart';
 import 'utils/notification_service.dart';
 
+// 전역 NotificationProvider 접근을 위한 변수
+NotificationProvider? globalNotificationProvider;
+
+// NotificationService에서 전역 NotificationProvider를 설정하는 함수
+void setGlobalNotificationProvider(NotificationProvider provider) {
+  globalNotificationProvider = provider;
+  // NotificationService에 전역 provider 설정
+  NotificationService.setGlobalProvider(provider);
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -56,8 +66,35 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => MedicationProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
-        ChangeNotifierProvider(create: (_) => NotificationProvider()),
-        ChangeNotifierProvider(create: (_) => ReminderProvider()),
+        ChangeNotifierProvider(
+          create: (context) {
+            final provider = NotificationProvider();
+            globalNotificationProvider = provider;
+            setGlobalNotificationProvider(provider);
+            return provider;
+          },
+        ),
+        ChangeNotifierProvider(
+          create: (context) {
+            final provider = ReminderProvider();
+            // NotificationProvider와 연결
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final notificationProvider = Provider.of<NotificationProvider>(
+                context,
+                listen: false,
+              );
+              provider.setNotificationCallback((title, message, type) {
+                notificationProvider.addNotification(
+                  title: title,
+                  message: message,
+                  timestamp: DateTime.now(),
+                  type: type,
+                );
+              });
+            });
+            return provider;
+          },
+        ),
       ],
       child: MaterialApp.router(
         title: '방구석 약사',

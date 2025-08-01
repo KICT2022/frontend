@@ -60,10 +60,25 @@ class NotificationProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // 외부에서 알림을 추가하는 메서드 (푸시 알림용)
+  void addNotificationFromExternal({
+    required String title,
+    required String message,
+    String? type,
+  }) {
+    addNotification(
+      title: title,
+      message: message,
+      timestamp: DateTime.now(),
+      type: type,
+    );
+  }
+
   void markNotificationAsRead(String notificationId) {
     final index = _notifications.indexWhere((n) => n['id'] == notificationId);
     if (index != -1) {
       _notifications[index]['isRead'] = true;
+      // 알림을 삭제하지 않고 읽음 상태로만 변경
       notifyListeners();
     }
   }

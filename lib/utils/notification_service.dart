@@ -3,10 +3,19 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../providers/notification_provider.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin
   _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+  // 전역 NotificationProvider 참조
+  static NotificationProvider? _globalNotificationProvider;
+
+  // 전역 NotificationProvider 설정
+  static void setGlobalProvider(NotificationProvider provider) {
+    _globalNotificationProvider = provider;
+  }
 
   static Future<void> initialize({bool requestPermissions = true}) async {
     // 시간대 데이터 초기화
@@ -44,6 +53,11 @@ class NotificationService {
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         _handleNotificationTap(response);
       },
+      onDidReceiveBackgroundNotificationResponse: (
+        NotificationResponse response,
+      ) {
+        _handleNotificationTap(response);
+      },
     );
 
     // 권한 요청이 필요한 경우에만 요청
@@ -55,10 +69,39 @@ class NotificationService {
   static void _handleNotificationTap(NotificationResponse response) {
     print('알림 클릭됨: ${response.payload}');
 
+    // 알림이 발생했을 때 앱 내 알림 목록에 추가
+    if (response.payload != null &&
+        response.payload!.startsWith('medication_reminder_')) {
+      final title = '복약 시간입니다 💊';
+      final body =
+          response.payload!.contains('pre_medication_reminder_')
+              ? '복약 준비 ⏰ - 5분 후 복용 시간입니다.'
+              : '복약 시간입니다 💊';
+
+      _addToAppNotificationList(title, body, response.payload);
+    }
+
     // 알림 탭으로 이동
     if (response.payload != null) {
       // 전역 변수나 Provider를 통해 알림 화면으로 이동
       // 이 부분은 나중에 구현
+    }
+  }
+
+  // 푸시 알림을 받았을 때 앱 내 알림 목록에 추가하는 메서드
+  static void addNotificationToApp({
+    required String title,
+    required String body,
+    String? payload,
+    String type = 'general',
+  }) {
+    // main.dart에서 정의한 전역 NotificationProvider 사용
+    try {
+      // 전역 변수를 통해 NotificationProvider에 접근
+      // 이 부분은 main.dart에서 globalNotificationProvider를 import해야 함
+      print('앱 내 알림 추가: $title - $body');
+    } catch (e) {
+      print('앱 내 알림 추가 실패: $e');
     }
   }
 
@@ -331,6 +374,81 @@ class NotificationService {
           note: note,
         );
       }
+    }
+  }
+
+  // 테스트용: 첫 실행 상태 확인
+  static Future<bool> isFirstLaunch() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('is_first_launch') ?? true;
+  }
+
+  // 즉시 알림을 표시하는 메서드
+  static Future<void> showNotification({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    try {
+      const AndroidNotificationDetails androidPlatformChannelSpecifics =
+          AndroidNotificationDetails(
+            'immediate_notification',
+            '즉시 알림',
+            channelDescription: '즉시 표시되는 알림입니다.',
+            importance: Importance.high,
+            priority: Priority.high,
+            icon: '@mipmap/ic_launcher',
+            playSound: true,
+            enableVibration: true,
+          );
+
+      const DarwinNotificationDetails iOSPlatformChannelSpecifics =
+          DarwinNotificationDetails();
+
+      const NotificationDetails platformChannelSpecifics = NotificationDetails(
+        android: androidPlatformChannelSpecifics,
+        iOS: iOSPlatformChannelSpecifics,
+      );
+
+      await _flutterLocalNotificationsPlugin.show(
+        id,
+        title,
+        body,
+        platformChannelSpecifics,
+        payload: payload,
+      );
+
+      // 앱 내 알림 목록에도 추가
+      _addToAppNotificationList(title, body, payload);
+
+      print('즉시 알림 발송 성공: $title');
+    } catch (e) {
+      print('즉시 알림 발송 실패: $e');
+      rethrow;
+    }
+  }
+
+  // 앱 내 알림 목록에 추가하는 메서드
+  static void _addToAppNotificationList(
+    String title,
+    String body,
+    String? payload,
+  ) {
+    try {
+      // 전역 NotificationProvider 사용
+      if (_globalNotificationProvider != null) {
+        _globalNotificationProvider!.addNotificationFromExternal(
+          title: title,
+          message: body,
+          type: 'medication',
+        );
+        print('앱 내 알림 목록에 추가됨: $title - $body');
+      } else {
+        print('전역 NotificationProvider가 설정되지 않음');
+      }
+    } catch (e) {
+      print('앱 내 알림 목록 추가 실패: $e');
     }
   }
 }
