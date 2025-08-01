@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_manager.dart';
 import 'dart:async';
-import 'dart:math';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -35,7 +34,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isConfirmPasswordVisible = false;
   bool _isEmailVerified = false;
   bool _isVerificationCodeSent = false;
-  String? _verificationCode;
   int _countdown = 0;
   Timer? _timer;
 
@@ -76,28 +74,68 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     setState(() {
-      _isVerificationCodeSent = true;
-      _countdown = 180; // 3분 카운트다운
+      _isLoading = true;
     });
 
-    // 인증 코드 생성 (실제로는 서버에서 생성)
-    _verificationCode = _generateVerificationCode();
+    try {
+      // API 매니저를 통한 인증 코드 전송
+      final result = await _apiManager.sendVerificationCode(
+        _emailController.text.trim(),
+      );
 
-    // 카운트다운 타이머 시작
-    _startCountdown();
+      if (result.success) {
+        setState(() {
+          _isVerificationCodeSent = true;
+          _countdown = 180; // 3분 카운트다운
+        });
 
-    // 실제로는 서버에 이메일 전송 요청
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('인증 코드가 ${_emailController.text}로 전송되었습니다.'),
-        backgroundColor: Colors.green,
-      ),
-    );
+        // 카운트다운 타이머 시작
+        _startCountdown();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                result.message ?? '인증 코드가 ${_emailController.text}로 전송되었습니다.',
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.error ?? '인증 코드 전송에 실패했습니다.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('인증 코드 전송 중 오류가 발생했습니다: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   // 인증 코드 확인
   Future<void> _verifyCode() async {
-    if (_verificationCodeController.text.isEmpty) {
+    // 입력된 인증 코드 검증
+    final inputCode = _verificationCodeController.text.trim();
+
+    if (inputCode.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('인증 코드를 입력해주세요.'),
@@ -107,31 +145,88 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    if (_verificationCodeController.text == _verificationCode) {
-      setState(() {
-        _isEmailVerified = true;
-      });
-      _timer?.cancel();
-
+    // 6자리 숫자 형식 검증
+    if (inputCode.length != 6 || !RegExp(r'^[0-9]{6}$').hasMatch(inputCode)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('이메일 인증이 완료되었습니다.'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('인증 코드가 일치하지 않습니다.'),
+          content: Text('6자리 숫자로 된 인증 코드를 입력해주세요.'),
           backgroundColor: Colors.red,
         ),
       );
+      return;
     }
-  }
 
-  // 인증 코드 생성 (6자리 숫자)
-  String _generateVerificationCode() {
-    return (100000 + Random().nextInt(900000)).toString();
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      print('🔍 인증 코드 확인 요청: ${_emailController.text.trim()} / $inputCode');
+
+      // 매번 서버에 새로운 인증 코드 확인 요청
+      final result = await _apiManager.verifyCode(
+        _emailController.text.trim(),
+        inputCode,
+      );
+
+      print(
+        '📡 인증 결과: success=${result.success}, message=${result.message}, error=${result.error}',
+      );
+
+      if (result.success) {
+        // 서버에서 인증 성공 응답을 받은 경우에만 인증 완료 처리
+        setState(() {
+          _isEmailVerified = true;
+        });
+        _timer?.cancel();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message ?? '이메일 인증이 완료되었습니다.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        // 서버에서 인증 실패 응답을 받은 경우
+        // 인증 상태를 false로 설정하여 재시도 가능하도록 함
+        setState(() {
+          _isEmailVerified = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.error ?? '인증 코드가 일치하지 않습니다. 다시 확인해주세요.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ 인증 코드 확인 중 오류: $e');
+
+      // 오류 발생 시 인증 상태를 false로 설정
+      setState(() {
+        _isEmailVerified = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('인증 코드 확인 중 오류가 발생했습니다: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   // 카운트다운 타이머 시작
@@ -143,24 +238,58 @@ class _RegisterScreenState extends State<RegisterScreen> {
           _countdown--;
         } else {
           timer.cancel();
+          // 카운트다운이 끝나면 인증 상태 초기화
           _isVerificationCodeSent = false;
+          _isEmailVerified = false;
+          _verificationCodeController.clear();
         }
       });
     });
   }
 
   // 인증 코드 재전송
-  void _resendVerificationCode() {
-    _sendVerificationCode();
+  Future<void> _resendVerificationCode() async {
+    // 기존 인증 상태 초기화
+    setState(() {
+      _isEmailVerified = false;
+      _verificationCodeController.clear();
+    });
+
+    // 타이머 취소
+    _timer?.cancel();
+
+    // 새로운 인증 코드 전송
+    await _sendVerificationCode();
   }
 
   Future<void> _register() async {
-    if (!_formKey.currentState!.validate()) return;
+    // 폼 검증
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('모든 필수 항목을 올바르게 입력해주세요.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
+    // 이메일 인증 완료 확인
     if (!_isEmailVerified) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('이메일 인증을 완료해주세요.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // 인증 코드가 전송되지 않았거나 만료된 경우
+    if (!_isVerificationCodeSent || _countdown <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('유효한 인증 코드를 먼저 전송해주세요.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -499,6 +628,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               Icons.check_circle,
                               color: Colors.green,
                             )
+                            : _isLoading
+                            ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
                             : TextButton(
                               onPressed:
                                   _isVerificationCodeSent && _countdown > 0
@@ -586,30 +721,46 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   ),
                                 ),
                               const SizedBox(width: 8),
-                              TextButton(
-                                onPressed:
-                                    _countdown > 0
-                                        ? null
-                                        : _resendVerificationCode,
-                                child: Text(
-                                  _countdown > 0 ? '재전송' : '재전송',
-                                  style: TextStyle(
-                                    color:
+                              _isLoading
+                                  ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 1.5,
+                                    ),
+                                  )
+                                  : TextButton(
+                                    onPressed:
                                         _countdown > 0
-                                            ? Colors.grey
-                                            : Colors.blue,
-                                    fontSize: 12,
+                                            ? null
+                                            : _resendVerificationCode,
+                                    child: Text(
+                                      _countdown > 0 ? '재전송' : '재전송',
+                                      style: TextStyle(
+                                        color:
+                                            _countdown > 0
+                                                ? Colors.grey
+                                                : Colors.blue,
+                                        fontSize: 12,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
                               const SizedBox(width: 8),
-                              IconButton(
-                                onPressed: _verifyCode,
-                                icon: const Icon(
-                                  Icons.check,
-                                  color: Colors.green,
-                                ),
-                              ),
+                              _isLoading
+                                  ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                  : IconButton(
+                                    onPressed: _verifyCode,
+                                    icon: const Icon(
+                                      Icons.check,
+                                      color: Colors.green,
+                                    ),
+                                  ),
                             ],
                           ),
                         ),
@@ -619,6 +770,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           }
                           if (value.length != 6) {
                             return '6자리 숫자를 입력해주세요.';
+                          }
+                          if (!RegExp(r'^[0-9]{6}$').hasMatch(value)) {
+                            return '숫자만 입력해주세요.';
                           }
                           return null;
                         },
@@ -751,11 +905,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // 회원가입 버튼
                 Consumer<AuthProvider>(
                   builder: (context, authProvider, child) {
+                    // 이메일 인증이 완료되었는지 확인
+                    final isEmailVerified = _isEmailVerified;
+                    final isVerificationCodeSent = _isVerificationCodeSent;
+                    final isCountdownValid = _countdown > 0;
+
+                    // 버튼 활성화 조건: 이메일 인증 완료 + 유효한 인증 코드 존재
+                    final isButtonEnabled =
+                        isEmailVerified &&
+                        isVerificationCodeSent &&
+                        isCountdownValid;
+
                     return SizedBox(
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: authProvider.isLoading ? null : _register,
+                        onPressed:
+                            (authProvider.isLoading || !isButtonEnabled)
+                                ? null
+                                : _register,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              isButtonEnabled ? Colors.blue : Colors.grey,
+                        ),
                         child:
                             authProvider.isLoading
                                 ? const SizedBox(
@@ -765,11 +937,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     color: Colors.white,
                                   ),
                                 )
-                                : const Text(
-                                  '회원가입',
+                                : Text(
+                                  isButtonEnabled ? '회원가입' : '이메일 인증 필요',
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w600,
+                                    color: Colors.white,
                                   ),
                                 ),
                       ),

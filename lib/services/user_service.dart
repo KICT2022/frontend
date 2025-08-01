@@ -114,16 +114,159 @@ class UserService {
   // 인증 코드 확인
   Future<AuthResult> verifyCode(String email, String code) async {
     try {
-      final response = await _apiService.post(
-        '${ApiConfig.baseUrl}/api/v1/users/verify-code?email=$email&code=$code',
-      );
-
-      if (response.success) {
-        return AuthResult(success: true, message: '인증 코드가 확인되었습니다.');
+      // 입력된 코드가 6자리 숫자인지 확인
+      if (code.length != 6 || !RegExp(r'^[0-9]{6}$').hasMatch(code)) {
+        return AuthResult(success: false, error: '올바른 6자리 숫자 인증 코드를 입력해주세요.');
       }
 
-      return AuthResult(success: false, error: '인증 코드 확인에 실패했습니다.');
+      print('🔍 인증 코드 확인 요청: email=$email, code=$code');
+
+      // 매번 새로운 요청을 보내기 위해 타임스탬프 추가
+      final response = await _apiService.post(
+        '${ApiConfig.baseUrl}/api/v1/users/verify-code?email=$email&code=$code&timestamp=${DateTime.now().millisecondsSinceEpoch}',
+      );
+
+      print(
+        '📡 서버 응답: success=${response.success}, statusCode=${response.statusCode}',
+      );
+      print('📄 응답 데이터: ${response.data}');
+      print('📄 응답 데이터 타입: ${response.data.runtimeType}');
+
+      // 응답 데이터의 구조를 자세히 분석
+      if (response.data != null && response.data is Map<String, dynamic>) {
+        final data = response.data as Map<String, dynamic>;
+        print('🔍 응답 데이터 키들: ${data.keys.toList()}');
+        data.forEach((key, value) {
+          print('  $key: $value (${value.runtimeType})');
+        });
+      }
+
+      // HTTP 상태 코드 확인
+      if (response.statusCode != 200) {
+        print('❌ HTTP 오류: ${response.statusCode}');
+        return AuthResult(
+          success: false,
+          error: '서버 오류가 발생했습니다. (${response.statusCode})',
+        );
+      }
+
+      // 서버 응답 body의 문구로 성공/실패 판단
+      bool isSuccess = false;
+      String message = '';
+
+      if (response.data != null) {
+        // String 형태의 응답 처리
+        if (response.data is String) {
+          final responseString = response.data as String;
+          message = responseString;
+          final lowerMessage = responseString.toLowerCase();
+
+          // 성공 문구 확인
+          if (lowerMessage.contains('성공') ||
+              lowerMessage.contains('완료') ||
+              lowerMessage.contains('success') ||
+              lowerMessage.contains('인증 완료') ||
+              lowerMessage.contains('인증 성공') ||
+              lowerMessage.contains('verified') ||
+              lowerMessage.contains('valid')) {
+            isSuccess = true;
+            print('✅ String 응답에서 성공으로 판단: $message');
+          }
+          // 실패 문구 확인
+          else if (lowerMessage.contains('실패') ||
+              lowerMessage.contains('오류') ||
+              lowerMessage.contains('error') ||
+              lowerMessage.contains('틀림') ||
+              lowerMessage.contains('인증 실패') ||
+              lowerMessage.contains('코드가 일치하지 않습니다') ||
+              lowerMessage.contains('invalid') ||
+              lowerMessage.contains('incorrect') ||
+              lowerMessage.contains('wrong')) {
+            isSuccess = false;
+            print('❌ String 응답에서 실패로 판단: $message');
+          } else {
+            // 명확하지 않은 경우 기본적으로 실패로 처리 (보안상 안전)
+            isSuccess = false;
+            message = '인증 코드가 일치하지 않습니다.';
+            print('❓ String 응답이 불명확, 실패로 처리: $message');
+          }
+        }
+        // Map 형태의 응답 처리
+        else if (response.data is Map<String, dynamic>) {
+          final data = response.data as Map<String, dynamic>;
+
+          // success 필드가 있으면 우선 확인
+          if (data.containsKey('success')) {
+            isSuccess = data['success'] == true;
+            message =
+                data['message'] ??
+                (isSuccess ? '인증이 완료되었습니다.' : '인증 코드가 일치하지 않습니다.');
+            print('✅ success 필드로 판단: $isSuccess, message: $message');
+          }
+          // message 필드에서 성공/실패 판단
+          else if (data.containsKey('message')) {
+            message = data['message'] as String;
+            final lowerMessage = message.toLowerCase();
+
+            // 성공 문구 확인
+            if (lowerMessage.contains('성공') ||
+                lowerMessage.contains('완료') ||
+                lowerMessage.contains('success') ||
+                lowerMessage.contains('인증 완료') ||
+                lowerMessage.contains('인증 성공') ||
+                lowerMessage.contains('verified') ||
+                lowerMessage.contains('valid')) {
+              isSuccess = true;
+              print('✅ Map 응답에서 성공으로 판단: $message');
+            }
+            // 실패 문구 확인
+            else if (lowerMessage.contains('실패') ||
+                lowerMessage.contains('오류') ||
+                lowerMessage.contains('error') ||
+                lowerMessage.contains('틀림') ||
+                lowerMessage.contains('인증 실패') ||
+                lowerMessage.contains('코드가 일치하지 않습니다') ||
+                lowerMessage.contains('invalid') ||
+                lowerMessage.contains('incorrect') ||
+                lowerMessage.contains('wrong')) {
+              isSuccess = false;
+              print('❌ Map 응답에서 실패로 판단: $message');
+            } else {
+              // 명확하지 않은 경우 기본적으로 실패로 처리 (보안상 안전)
+              isSuccess = false;
+              message = '인증 코드가 일치하지 않습니다.';
+              print('❓ Map 응답이 불명확, 실패로 처리: $message');
+            }
+          } else {
+            // message 필드가 없는 경우
+            isSuccess = false;
+            message = '인증 코드가 일치하지 않습니다.';
+            print('❌ Map에 message 필드 없음, 실패로 처리');
+          }
+        } else {
+          // 기타 형태의 응답
+          isSuccess = false;
+          message = '인증 코드가 일치하지 않습니다.';
+          print('❌ 알 수 없는 응답 형태: ${response.data.runtimeType}');
+        }
+      } else {
+        // 응답 데이터가 없는 경우
+        isSuccess = false;
+        message = '인증 코드가 일치하지 않습니다.';
+        print('❌ 응답 데이터 없음, 실패로 처리');
+      }
+
+      if (isSuccess) {
+        return AuthResult(success: true, message: '이메일 인증이 완료되었습니다.');
+      } else {
+        // 실패 시에도 서버에서 받은 메시지를 사용
+        return AuthResult(
+          success: false,
+          error: message.isNotEmpty ? message : '인증 코드가 일치하지 않습니다.',
+        );
+      }
     } catch (e) {
+      print('❌ 인증 코드 확인 중 예외 발생: $e');
       return AuthResult(success: false, error: '인증 코드 확인 중 오류가 발생했습니다: $e');
     }
   }

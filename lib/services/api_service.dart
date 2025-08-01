@@ -51,7 +51,9 @@ class ApiService {
     headers['User-Agent'] = 'Flutter-App/1.0';
     headers['Accept'] = 'application/json, text/plain, */*';
     headers['Accept-Language'] = 'ko-KR,ko;q=0.9,en;q=0.8';
-    headers['Cache-Control'] = 'no-cache';
+    headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+    headers['Pragma'] = 'no-cache';
+    headers['Expires'] = '0';
 
     if (_accessToken != null) {
       headers['Authorization'] = 'Bearer $_accessToken';
@@ -152,8 +154,40 @@ class ApiService {
       data = body;
     }
 
+    // HTTP 상태 코드가 성공 범위인 경우
     if (statusCode >= 200 && statusCode < 300) {
-      return ApiResponse(statusCode: statusCode, data: data, success: true);
+      // 응답 데이터에서 실제 성공/실패 여부 확인
+      bool isSuccess = true;
+
+      if (data is Map<String, dynamic>) {
+        // 서버 응답에서 success 필드 확인
+        if (data.containsKey('success')) {
+          isSuccess = data['success'] == true;
+        }
+        // error 필드가 있으면 실패로 간주
+        else if (data.containsKey('error')) {
+          isSuccess = false;
+        }
+        // message 필드에서 성공/실패 판단
+        else if (data.containsKey('message')) {
+          final message = data['message'].toString().toLowerCase();
+          if (message.contains('실패') ||
+              message.contains('오류') ||
+              message.contains('error') ||
+              message.contains('틀림') ||
+              message.contains('invalid') ||
+              message.contains('incorrect') ||
+              message.contains('wrong')) {
+            isSuccess = false;
+          }
+        }
+      }
+
+      return ApiResponse(
+        statusCode: statusCode,
+        data: data,
+        success: isSuccess,
+      );
     } else {
       String errorMessage = '서버 오류가 발생했습니다';
 
