@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import '../widgets/bottom_navigation.dart';
 import 'medication_detail_screen.dart';
 import '../models/symptom.dart';
-import '../services/api_manager.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -19,8 +18,7 @@ class _SearchScreenState extends State<SearchScreen> {
   bool _isSymptomInput = true;
   final List<String> _selectedSymptoms = [];
   String? _selectedCategoryId;
-  final TextEditingController _customSymptomController =
-      TextEditingController();
+
   // 약물 입력 칸 개수를 관리하는 변수 추가
   int _drugInputCount = 2;
   // 약물 입력 칸들의 TextEditingController 리스트
@@ -202,11 +200,6 @@ class _SearchScreenState extends State<SearchScreen> {
     },
   ];
 
-  // API 매니저 추가
-  final ApiManager _apiManager = ApiManager();
-  bool _isLoading = false;
-  String? _searchResult;
-
   @override
   void initState() {
     super.initState();
@@ -220,7 +213,6 @@ class _SearchScreenState extends State<SearchScreen> {
       controller.dispose();
     }
     _symptomInputController.dispose();
-    _customSymptomController.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -288,147 +280,6 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
-  // API를 통한 약물 정보 검색
-  Future<void> _searchDrugInfo(String query) async {
-    if (query.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('검색할 약물명을 입력해주세요.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _searchResult = null;
-    });
-
-    try {
-      final result = await _apiManager.getDrugInfo(query.trim());
-
-      if (result.success && result.drugInfo != null) {
-        setState(() {
-          _searchResult = result.drugInfo;
-        });
-
-        // 검색 결과를 알림으로 추가
-        final notificationProvider = Provider.of<NotificationProvider>(
-          context,
-          listen: false,
-        );
-        notificationProvider.addNotification(
-          title: '약물 정보 검색 완료',
-          message: '$query에 대한 정보를 찾았습니다.',
-          timestamp: DateTime.now(),
-          type: 'info',
-        );
-      } else {
-        setState(() {
-          _searchResult = '검색 결과가 없습니다.';
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result.error ?? '약물 정보를 찾을 수 없습니다.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-    } catch (e) {
-      setState(() {
-        _searchResult = '검색 중 오류가 발생했습니다.';
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('검색 중 오류가 발생했습니다: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  // 증상 기반 약물 추천
-  Future<void> _getMedicationRecommendation() async {
-    final medicationProvider = Provider.of<MedicationProvider>(
-      context,
-      listen: false,
-    );
-
-    if (medicationProvider.selectedSymptoms.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('증상을 선택해주세요.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _searchResult = null;
-    });
-
-    try {
-      // 선택된 증상들을 하나의 메시지로 결합
-      final symptoms = medicationProvider.selectedSymptoms.join(', ');
-      final message = '다음 증상에 대한 약물을 추천해주세요: $symptoms';
-
-      final result = await _apiManager.sendChatMessage(message);
-
-      if (result.success && result.reply != null) {
-        setState(() {
-          _searchResult = result.reply;
-        });
-
-        // 추천 결과를 알림으로 추가
-        final notificationProvider = Provider.of<NotificationProvider>(
-          context,
-          listen: false,
-        );
-        notificationProvider.addNotification(
-          title: '약물 추천 완료',
-          message: '선택한 증상에 대한 약물을 추천했습니다.',
-          timestamp: DateTime.now(),
-          type: 'recommendation',
-        );
-      } else {
-        setState(() {
-          _searchResult = '추천 결과를 가져올 수 없습니다.';
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result.error ?? '약물 추천에 실패했습니다.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-    } catch (e) {
-      setState(() {
-        _searchResult = '추천 중 오류가 발생했습니다.';
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('추천 중 오류가 발생했습니다: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
   void _addSymptom(String symptomId) {
     setState(() {
       if (!_selectedSymptoms.contains(symptomId)) {
@@ -441,15 +292,6 @@ class _SearchScreenState extends State<SearchScreen> {
     setState(() {
       _selectedSymptoms.remove(symptomId);
     });
-  }
-
-  void _addCustomSymptom() {
-    if (_customSymptomController.text.trim().isNotEmpty) {
-      setState(() {
-        _selectedSymptoms.add(_customSymptomController.text.trim());
-        _customSymptomController.clear();
-      });
-    }
   }
 
   IconData _getCategoryIcon(String categoryId) {
@@ -830,151 +672,6 @@ class _SearchScreenState extends State<SearchScreen> {
               },
             ),
 
-            const SizedBox(height: 32),
-
-            // API 연동 버튼들 추가
-            if (_searchResult != null) ...[
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blue.shade200),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.info, color: Colors.blue.shade600),
-                        const SizedBox(width: 8),
-                        Text(
-                          '검색 결과',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(_searchResult!, style: const TextStyle(fontSize: 14)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // 약물 정보 검색 섹션
-            Text(
-              '약물 정보 검색',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF174D4D),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // 약물명 입력 필드
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _customSymptomController,
-                      decoration: const InputDecoration(
-                        hintText: '약물명을 입력해주세요',
-                        border: InputBorder.none,
-                        hintStyle: TextStyle(color: Colors.grey),
-                      ),
-                      onSubmitted: (value) {
-                        _searchDrugInfo(value);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton(
-                    onPressed:
-                        _isLoading
-                            ? null
-                            : () =>
-                                _searchDrugInfo(_customSymptomController.text),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue.shade600,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.all(8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child:
-                        _isLoading
-                            ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              ),
-                            )
-                            : const Icon(Icons.search, size: 18),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // 증상 기반 약물 추천 버튼
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _getMedicationRecommendation,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange.shade600,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child:
-                    _isLoading
-                        ? const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 12),
-                            Text('추천 중...'),
-                          ],
-                        )
-                        : const Text(
-                          '증상 기반 약물 추천',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-              ),
-            ),
             const SizedBox(height: 32),
 
             // 나에게 맞는 약 확인하기 버튼
