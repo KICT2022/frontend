@@ -118,11 +118,18 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     try {
+      print('🔍 로그인 시도: email=${_emailController.text.trim()}');
+
       // API 매니저를 통한 직접 로그인 시도
       final result = await _apiManager.login(
         _emailController.text.trim(),
         _passwordController.text,
       );
+
+      print('📡 로그인 결과: success=${result.success}, error=${result.error}');
+      if (result.user != null) {
+        print('👤 사용자 정보: ${result.user!.name}, ${result.user!.email}');
+      }
 
       if (result.success && result.user != null) {
         // AuthProvider에도 사용자 정보 설정
@@ -271,7 +278,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   obscureText: !_isPasswordVisible,
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (_) {
-                    _login();
+                    // 자동 로그인 방지 - 로그인 버튼을 직접 클릭해야만 실행
+                    // 포커스만 해제
                   },
                   decoration: InputDecoration(
                     labelText: '비밀번호',
@@ -334,39 +342,35 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 30),
 
                 // 로그인 버튼
-                Consumer<AuthProvider>(
-                  builder: (context, authProvider, child) {
-                    return SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: authProvider.isLoading ? null : _login,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child:
-                            authProvider.isLoading
-                                ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                  ),
-                                )
-                                : const Text(
-                                  '로그인',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _login,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    );
-                  },
+                    ),
+                    child:
+                        _isLoading
+                            ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                              ),
+                            )
+                            : const Text(
+                              '로그인',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                  ),
                 ),
                 const SizedBox(height: 20),
 

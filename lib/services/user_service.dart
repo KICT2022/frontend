@@ -13,34 +13,90 @@ class UserService {
   // 로그인
   Future<AuthResult> login(String email, String password) async {
     try {
+      print('🔍 로그인 요청: email=$email');
+
+      final requestData = {'email': email, 'password': password};
+      print('📤 로그인 요청 데이터: $requestData');
+      print('📤 로그인 URL: ${ApiConfig.loginUrl}');
+
       final response = await _apiService.post(
         ApiConfig.loginUrl,
-        data: {'email': email, 'password': password},
+        data: requestData,
       );
 
+      print(
+        '📡 로그인 서버 응답: success=${response.success}, statusCode=${response.statusCode}',
+      );
+      print('📄 로그인 응답 데이터: ${response.data}');
+      print('📄 로그인 응답 데이터 타입: ${response.data.runtimeType}');
+
       if (response.success && response.data != null) {
-        final data = response.data as Map<String, dynamic>;
-
-        // 토큰 저장
-        if (data.containsKey('access_token')) {
-          final accessToken = data['access_token'] as String;
-          final refreshToken = data['refresh_token'] as String? ?? '';
-          await _apiService.saveTokens(accessToken, refreshToken);
+        // String 형태의 응답 처리 (서버에서 "로그인 성공" 등으로 응답)
+        if (response.data is String) {
+          final responseString = response.data as String;
+          print('✅ String 응답으로 로그인 성공: $responseString');
+          return AuthResult(success: true, message: responseString);
         }
 
-        // 사용자 정보 파싱
-        User? user;
-        if (data.containsKey('user')) {
-          final userData = data['user'] as Map<String, dynamic>;
-          user = User.fromJson(userData);
-        } else if (data.containsKey('email')) {
-          user = User.fromJson(data);
+        // Map 형태의 응답 처리
+        if (response.data is Map<String, dynamic>) {
+          final data = response.data as Map<String, dynamic>;
+          print('🔍 로그인 응답 데이터 키들: ${data.keys.toList()}');
+          data.forEach((key, value) {
+            print('  $key: $value (${value.runtimeType})');
+          });
+
+          // 토큰 저장 (access_token 또는 token)
+          if (data.containsKey('access_token')) {
+            final accessToken = data['access_token'] as String;
+            final refreshToken = data['refresh_token'] as String? ?? '';
+            await _apiService.saveTokens(accessToken, refreshToken);
+            print('🔑 access_token 저장 완료');
+          } else if (data.containsKey('token')) {
+            final token = data['token'] as String;
+            await _apiService.saveTokens(token, ''); // refresh token이 없으면 빈 문자열
+            print('🔑 token 저장 완료');
+          }
+
+          // 사용자 정보 파싱
+          User? user;
+          if (data.containsKey('user')) {
+            final userData = data['user'] as Map<String, dynamic>;
+            user = User.fromJson(userData);
+            print('👤 사용자 정보 파싱 완료: ${user.name}');
+          } else if (data.containsKey('email')) {
+            user = User.fromJson(data);
+            print('👤 사용자 정보 파싱 완료 (직접): ${user.name}');
+          } else {
+            // 사용자 정보가 없는 경우 기본 사용자 객체 생성
+            user = User(
+              id: '0',
+              name: '사용자',
+              email: email,
+              phoneNumber: '',
+              gender: '',
+              birthDate: DateTime.now(),
+              medicalHistory: [],
+              currentMedications: [],
+              address: '',
+            );
+            print('👤 기본 사용자 정보 생성');
+          }
+
+          return AuthResult(success: true, user: user);
         }
 
-        return AuthResult(success: true, user: user);
+        return AuthResult(success: true, message: '로그인이 완료되었습니다.');
       }
 
-      return AuthResult(success: false, error: '로그인에 실패했습니다.');
+      // 서버에서 받은 에러 메시지 사용
+      String errorMessage = '로그인에 실패했습니다.';
+      if (response.data != null && response.data is Map<String, dynamic>) {
+        final data = response.data as Map<String, dynamic>;
+        errorMessage = data['message'] ?? data['error'] ?? errorMessage;
+      }
+
+      return AuthResult(success: false, error: errorMessage);
     } catch (e) {
       return AuthResult(success: false, error: '로그인 중 오류가 발생했습니다: $e');
     }
