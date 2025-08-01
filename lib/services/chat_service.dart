@@ -33,21 +33,44 @@ class ChatService {
   // 약물 정보 조회
   Future<DrugInfoResult> getDrugInfo(String drugName) async {
     try {
+      print('🔍 약물 정보 조회 요청: $drugName');
+
       final response = await _apiService.post(
         ApiConfig.drugInfoUrl,
         data: {'message': drugName},
       );
 
-      if (response.success && response.data != null) {
-        final data = response.data as Map<String, dynamic>;
-        final drugInfo =
-            data['drugInfo'] ?? data['info'] ?? data['response'] ?? '';
+      print(
+        '📡 약물 정보 조회 응답: success=${response.success}, data=${response.data}',
+      );
+      print('📄 응답 데이터 타입: ${response.data.runtimeType}');
 
-        return DrugInfoResult(success: true, drugInfo: drugInfo, data: data);
+      if (response.success && response.data != null) {
+        // String 형태의 응답 처리
+        if (response.data is String) {
+          final drugInfo = response.data as String;
+          print('✅ String 응답으로 약물 정보 조회 성공: $drugInfo');
+          return DrugInfoResult(success: true, drugInfo: drugInfo);
+        }
+
+        // Map 형태의 응답 처리
+        if (response.data is Map<String, dynamic>) {
+          final data = response.data as Map<String, dynamic>;
+          final drugInfo =
+              data['drugInfo'] ?? data['info'] ?? data['response'] ?? '';
+
+          print('✅ Map 응답으로 약물 정보 조회 성공: $drugInfo');
+          return DrugInfoResult(success: true, drugInfo: drugInfo, data: data);
+        }
+
+        // 기타 형태의 응답
+        print('❓ 알 수 없는 응답 형태: ${response.data.runtimeType}');
+        return DrugInfoResult(success: false, error: '알 수 없는 응답 형태입니다.');
       }
 
       return DrugInfoResult(success: false, error: '약물 정보 조회에 실패했습니다.');
     } catch (e) {
+      print('❌ 약물 정보 조회 중 오류: $e');
       return DrugInfoResult(success: false, error: '약물 정보 조회 중 오류가 발생했습니다: $e');
     }
   }

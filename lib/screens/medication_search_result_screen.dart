@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../models/medication.dart';
+import '../services/api_manager.dart';
 
 class MedicationSearchResultScreen extends StatefulWidget {
   final String searchQuery;
@@ -17,6 +18,10 @@ class _MedicationSearchResultScreenState
   bool _isLoading = true;
   List<Medication> _searchResults = [];
   String? _errorMessage;
+  String? _drugInfo;
+
+  // API 매니저 추가
+  final ApiManager _apiManager = ApiManager();
 
   @override
   void initState() {
@@ -28,76 +33,35 @@ class _MedicationSearchResultScreenState
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _drugInfo = null;
     });
 
     try {
-      // 백엔드 API 호출 시뮬레이션 (실제로는 API 호출)
-      await Future.delayed(const Duration(seconds: 1));
+      print('🔍 약 검색 요청: ${widget.searchQuery}');
 
-      // 임시 더미 데이터
-      _searchResults = _getDummySearchResults(widget.searchQuery);
+      // API를 통한 약 정보 검색
+      final result = await _apiManager.getDrugInfo(widget.searchQuery);
 
-      setState(() {
-        _isLoading = false;
-      });
+      print('📡 약 검색 결과: success=${result.success}, error=${result.error}');
+
+      if (result.success) {
+        setState(() {
+          _drugInfo = result.drugInfo;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _errorMessage = result.error ?? '약 정보 검색에 실패했습니다.';
+          _isLoading = false;
+        });
+      }
     } catch (e) {
+      print('❌ 약 검색 중 오류: $e');
       setState(() {
         _isLoading = false;
         _errorMessage = '검색 중 오류가 발생했습니다. 다시 시도해주세요.';
       });
     }
-  }
-
-  List<Medication> _getDummySearchResults(String query) {
-    // 임시 더미 데이터 - 실제로는 백엔드에서 받아올 데이터
-    final dummyData = [
-      {
-        'id': '1',
-        'name': '타이레놀 500mg',
-        'genericName': '아세트아미노펜',
-        'manufacturer': '한국얀센',
-        'description': '해열, 진통제로 사용되는 약물입니다.',
-        'indications': '두통, 치통, 생리통, 근육통, 관절통, 감기로 인한 발열 및 통증',
-        'dosage': '성인: 1회 1-2정, 1일 3-4회 복용',
-        'precautions': '간장애 환자, 알코올 중독자, 알레르기 환자는 주의',
-        'sideEffects': '구역, 구토, 복통, 발진 등',
-        'imageUrl': null,
-      },
-      {
-        'id': '2',
-        'name': '아스피린 100mg',
-        'genericName': '아세틸살리실산',
-        'manufacturer': '바이엘',
-        'description': '해열, 진통, 항염증 작용을 하는 약물입니다.',
-        'indications': '두통, 치통, 생리통, 근육통, 관절통, 감기로 인한 발열 및 통증',
-        'dosage': '성인: 1회 1-2정, 1일 3-4회 복용',
-        'precautions': '위궤양 환자, 출혈성 질환자, 임신부는 주의',
-        'sideEffects': '위장장애, 출혈, 알레르기 반응 등',
-        'imageUrl': null,
-      },
-      {
-        'id': '3',
-        'name': '판콜에이 정',
-        'genericName': '아세트아미노펜, 클로르페니라민말레산염, 슈도에페드린염산염',
-        'manufacturer': '동아제약',
-        'description': '감기 증상 완화를 위한 복합제입니다.',
-        'indications': '감기로 인한 발열, 오한, 두통, 콧물, 코막힘, 재채기, 인후통',
-        'dosage': '성인: 1회 2정, 1일 3회 복용',
-        'precautions': '고혈압, 심장질환, 갑상선질환, 당뇨병 환자는 주의',
-        'sideEffects': '졸음, 어지러움, 구역, 구토, 식욕부진 등',
-        'imageUrl': null,
-      },
-    ];
-
-    // 검색어에 따른 필터링 (실제로는 백엔드에서 처리)
-    return dummyData
-        .where(
-          (med) =>
-              med['name']!.toLowerCase().contains(query.toLowerCase()) ||
-              med['genericName']!.toLowerCase().contains(query.toLowerCase()),
-        )
-        .map((data) => Medication.fromMap(data))
-        .toList();
   }
 
   @override
@@ -175,52 +139,160 @@ class _MedicationSearchResultScreenState
       );
     }
 
-    if (_searchResults.isEmpty) {
-      return Center(
+    // API 응답이 있는 경우 약 정보 표시
+    if (_drugInfo != null && _drugInfo!.isNotEmpty) {
+      return _buildDrugInfoWidget();
+    }
+
+    // 검색 결과가 없는 경우
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search_off, size: 64, color: Colors.grey.shade400),
+          const SizedBox(height: 16),
+          Text(
+            '"${widget.searchQuery}"에 대한 검색 결과가 없습니다.',
+            style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '다른 검색어를 입력해보세요.',
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrugInfoWidget() {
+    return Padding(
+      padding: const EdgeInsets.all(20.0),
+      child: SingleChildScrollView(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.search_off, size: 64, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            Text(
-              '"${widget.searchQuery}"에 대한 검색 결과가 없습니다.',
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-              textAlign: TextAlign.center,
+            // 검색어 표시
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 4,
+              color: Colors.white,
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF174D4D).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.medication,
+                        size: 30,
+                        color: Color(0xFF174D4D),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.searchQuery,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF174D4D),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '약 정보 검색 결과',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              '다른 검색어를 입력해보세요.',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+            const SizedBox(height: 24),
+
+            // 약 정보 내용
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 4,
+              color: Colors.white,
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: const Color(0xFF174D4D),
+                          size: 24,
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          '약 정보',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF174D4D),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      _drugInfo!,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey.shade800,
+                        height: 1.6,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // 다시 검색 버튼
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => context.pop(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF174D4D),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  '다른 약 검색하기',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
             ),
           ],
         ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '검색 결과 ${_searchResults.length}건',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF174D4D),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _searchResults.length,
-              itemBuilder: (context, index) {
-                final medication = _searchResults[index];
-                return _buildMedicationCard(medication);
-              },
-            ),
-          ),
-        ],
       ),
     );
   }
