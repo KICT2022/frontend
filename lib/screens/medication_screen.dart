@@ -823,7 +823,8 @@ class _MedicationScreenState extends State<MedicationScreen> {
     // 수정 모드일 때 기존 데이터 설정
     if (isEditing) {
       final textParts = existingReminder['text'].split(' • ');
-      if (textParts.isNotEmpty && textParts[0].contains('약')) {
+      if (textParts.isNotEmpty) {
+        // 약 이름 추출 (첫 번째 부분에서 약 이름만 추출)
         medicationName = textParts[0];
       }
       selectedTimes = _parseTimesFromText(existingReminder['text']);
@@ -832,6 +833,10 @@ class _MedicationScreenState extends State<MedicationScreen> {
         medicationNote = textParts[3];
       }
     }
+
+    // TextEditingController 생성
+    final TextEditingController medicationNameController =
+        TextEditingController(text: medicationName);
 
     showDialog(
       context: context,
@@ -852,7 +857,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
                   children: [
                     // 약 이름 입력
                     TextField(
-                      controller: TextEditingController(text: medicationName),
+                      controller: medicationNameController,
                       decoration: InputDecoration(
                         labelText: '약 이름',
                         hintText: '예: A약, B약',
@@ -1232,20 +1237,22 @@ class _MedicationScreenState extends State<MedicationScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    if (medicationName.isNotEmpty &&
+                    final currentMedicationName =
+                        medicationNameController.text.trim();
+                    if (currentMedicationName.isNotEmpty &&
                         selectedDays.isNotEmpty &&
                         selectedTimes.isNotEmpty) {
                       if (isEditing) {
                         _updateReminder(
                           existingReminder['id'],
-                          medicationName,
+                          currentMedicationName,
                           selectedTimes,
                           selectedDays,
                           medicationNote,
                         );
                       } else {
                         _addReminder(
-                          medicationName,
+                          currentMedicationName,
                           selectedTimes,
                           selectedDays,
                           medicationNote,

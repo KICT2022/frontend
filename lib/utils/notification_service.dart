@@ -5,6 +5,12 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/notification_provider.dart';
 
+// 백그라운드 알림 처리를 위한 top-level 함수
+@pragma('vm:entry-point')
+void onDidReceiveBackgroundNotificationResponse(NotificationResponse response) {
+  NotificationService.handleBackgroundNotificationTap(response);
+}
+
 class NotificationService {
   static final FlutterLocalNotificationsPlugin
   _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
@@ -15,6 +21,11 @@ class NotificationService {
   // 전역 NotificationProvider 설정
   static void setGlobalProvider(NotificationProvider provider) {
     _globalNotificationProvider = provider;
+  }
+
+  // 백그라운드 알림 처리를 위한 static 메서드
+  static void handleBackgroundNotificationTap(NotificationResponse response) {
+    _handleNotificationTap(response);
   }
 
   static Future<void> initialize({bool requestPermissions = true}) async {
@@ -45,19 +56,14 @@ class NotificationService {
           linux: initializationSettingsLinux,
         );
 
-    await _flutterLocalNotificationsPlugin.initialize(initializationSettings);
-
     // 알림 클릭 이벤트 리스너 설정
-    _flutterLocalNotificationsPlugin.initialize(
+    await _flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         _handleNotificationTap(response);
       },
-      onDidReceiveBackgroundNotificationResponse: (
-        NotificationResponse response,
-      ) {
-        _handleNotificationTap(response);
-      },
+      onDidReceiveBackgroundNotificationResponse:
+          onDidReceiveBackgroundNotificationResponse,
     );
 
     // 권한 요청이 필요한 경우에만 요청
@@ -418,9 +424,6 @@ class NotificationService {
         platformChannelSpecifics,
         payload: payload,
       );
-
-      // 앱 내 알림 목록에도 추가
-      _addToAppNotificationList(title, body, payload);
 
       print('즉시 알림 발송 성공: $title');
     } catch (e) {
