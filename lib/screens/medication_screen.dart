@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/notification_provider.dart';
 import '../providers/reminder_provider.dart';
+
 import '../widgets/bottom_navigation.dart';
 
 class MedicationScreen extends StatefulWidget {
@@ -119,6 +120,9 @@ class _MedicationScreenState extends State<MedicationScreen> {
                       ),
                       const SizedBox(height: 20),
                       _buildMedicationSchedule(),
+                      const SizedBox(height: 20),
+                      // 오늘의 복용 완료 체크
+                      _buildTodayCompletionSection(),
                     ],
                   ),
                 ),
@@ -136,7 +140,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '복약 알림 설정',
+                        '복약 일정',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -169,7 +173,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text('알림 추가하기'),
+                          child: const Text('일정 추가하기'),
                         ),
                       ),
                     ],
@@ -209,9 +213,6 @@ class _MedicationScreenState extends State<MedicationScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      // 오늘의 복용 완료 버튼
-                      _buildTodayCompletionButton(),
-                      const SizedBox(height: 20),
                       // 월간 달성률 스탬프 그리드
                       _buildMonthlyAchievementGrid(),
                     ],
@@ -244,42 +245,6 @@ class _MedicationScreenState extends State<MedicationScreen> {
     );
   }
 
-  // 오늘 복용해야 하는 약들을 가져오는 메서드
-  List<Map<String, dynamic>> _getTodayMedications(
-    List<Map<String, dynamic>> reminders,
-  ) {
-    final now = DateTime.now();
-    final today = now.weekday; // 1: 월요일, 2: 화요일, ..., 7: 일요일
-    final todayKorean = _getKoreanWeekday(today);
-
-    List<Map<String, dynamic>> todayMedications = [];
-
-    for (final reminder in reminders) {
-      final days = List<String>.from(reminder['days']);
-      if (days.contains(todayKorean)) {
-        // 시간별로 약을 분류
-        final times = reminder['time'].split(', ');
-        for (final time in times) {
-          final timeOfDay = _getTimeOfDay(time);
-          todayMedications.add({
-            'name': reminder['text'].split(' • ')[0], // 약 이름
-            'time': time,
-            'timeOfDay': timeOfDay,
-            'note': reminder['note'] ?? '',
-          });
-        }
-      }
-    }
-
-    // 시간대별로 정렬 (아침 -> 점심 -> 저녁)
-    todayMedications.sort((a, b) {
-      final order = {'아침': 0, '점심': 1, '저녁': 2};
-      return order[a['timeOfDay']]!.compareTo(order[b['timeOfDay']]!);
-    });
-
-    return todayMedications;
-  }
-
   // 요일을 한국어로 변환
   String _getKoreanWeekday(int weekday) {
     switch (weekday) {
@@ -308,125 +273,6 @@ class _MedicationScreenState extends State<MedicationScreen> {
     if (hour >= 5 && hour < 11) return '아침';
     if (hour >= 11 && hour < 17) return '점심';
     return '저녁';
-  }
-
-  // 약 행을 만드는 메서드
-  Widget _buildMedicationRow(Map<String, dynamic> medication) {
-    final name = medication['name'];
-    final timeOfDay = medication['timeOfDay'];
-    final note = medication['note'];
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: Colors.grey.shade200)),
-        color: Colors.white,
-      ),
-      child: Row(
-        children: [
-          // 약 이름과 아이콘
-          Expanded(
-            flex: 2,
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.medication,
-                    size: 20,
-                    color: Colors.blue.shade600,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Colors.black87,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (note.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          note,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade700,
-                            fontWeight: FontWeight.w400,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          // 시간대별 표시
-          Expanded(
-            flex: 3,
-            child: Row(
-              children: [
-                _buildTimeSlot('아침', timeOfDay == '아침', Colors.orange),
-                const SizedBox(width: 8),
-                _buildTimeSlot('점심', timeOfDay == '점심', Colors.green),
-                const SizedBox(width: 8),
-                _buildTimeSlot('저녁', timeOfDay == '저녁', Colors.purple),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 시간대별 슬롯을 만드는 메서드
-  Widget _buildTimeSlot(String timeLabel, bool isActive, Color activeColor) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-        decoration: BoxDecoration(
-          color: isActive ? activeColor.withOpacity(0.1) : Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color:
-                isActive ? activeColor.withOpacity(0.3) : Colors.grey.shade200,
-            width: 1,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              isActive ? Icons.check_circle : Icons.circle_outlined,
-              size: 16,
-              color: isActive ? activeColor : Colors.grey.shade400,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              timeLabel,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                color: isActive ? activeColor : Colors.grey.shade500,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   // 헤더용 시간대 슬롯을 만드는 메서드
@@ -475,11 +321,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
   Widget _buildMedicationSchedule() {
     return Consumer<ReminderProvider>(
       builder: (context, reminderProvider, child) {
-        final todayMedications = _getTodayMedications(
-          reminderProvider.reminders,
-        );
-
-        if (todayMedications.isEmpty) {
+        if (reminderProvider.reminders.isEmpty) {
           return Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -573,9 +415,9 @@ class _MedicationScreenState extends State<MedicationScreen> {
                   ],
                 ),
               ),
-              // 오늘의 약들 표시
-              ...todayMedications.map(
-                (medication) => _buildMedicationRow(medication),
+              // 알림들을 약별로 그룹화해서 표시
+              ...reminderProvider.reminders.map(
+                (reminder) => _buildMedicationRowFromReminder(reminder),
               ),
             ],
           ),
@@ -584,40 +426,347 @@ class _MedicationScreenState extends State<MedicationScreen> {
     );
   }
 
-  Widget _buildReminderItem(Map<String, dynamic> reminder) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Text(
-              reminder['text'],
-              style: TextStyle(fontSize: 14, height: 1.3),
-              softWrap: true,
-              overflow: TextOverflow.visible,
+  // 알림 데이터로부터 약 행을 만드는 메서드
+  Widget _buildMedicationRowFromReminder(Map<String, dynamic> reminder) {
+    final textParts = reminder['text'].split(' • ');
+    final medicationName = textParts.isNotEmpty ? textParts[0] : '';
+    final note = textParts.length > 3 ? textParts[3] : '';
+    final reminderId = reminder['id'];
+
+    // 시간들을 파싱해서 시간대별로 분류
+    final times = _parseTimesFromText(reminder['text']);
+    bool hasMorning = false;
+    bool hasLunch = false;
+    bool hasEvening = false;
+
+    for (final time in times) {
+      final timeOfDay = _getTimeOfDay(
+        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
+      );
+      if (timeOfDay == '아침') hasMorning = true;
+      if (timeOfDay == '점심') hasLunch = true;
+      if (timeOfDay == '저녁') hasEvening = true;
+    }
+
+    return Consumer<ReminderProvider>(
+      builder: (context, reminderProvider, child) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: Colors.grey.shade200)),
+            color: Colors.white,
+          ),
+          child: Row(
+            children: [
+              // 약 이름과 아이콘
+              Expanded(
+                flex: 2,
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.medication,
+                        size: 20,
+                        color: Colors.blue.shade600,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            medicationName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Colors.black87,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (note.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              note,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade700,
+                                fontWeight: FontWeight.w400,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              // 시간대별 표시
+              Expanded(
+                flex: 3,
+                child: Row(
+                  children: [
+                    _buildClickableTimeSlot(
+                      '아침',
+                      hasMorning,
+                      Colors.orange,
+                      reminderId,
+                      reminderProvider,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildClickableTimeSlot(
+                      '점심',
+                      hasLunch,
+                      Colors.green,
+                      reminderId,
+                      reminderProvider,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildClickableTimeSlot(
+                      '저녁',
+                      hasEvening,
+                      Colors.purple,
+                      reminderId,
+                      reminderProvider,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // 클릭 가능한 시간대별 슬롯을 만드는 메서드
+  Widget _buildClickableTimeSlot(
+    String timeLabel,
+    bool hasSchedule,
+    Color activeColor,
+    int reminderId,
+    ReminderProvider reminderProvider,
+  ) {
+    final isCompleted = reminderProvider.isCompleted(reminderId, timeLabel);
+    final isEnabled = hasSchedule; // 해당 시간대에 알림이 설정되어 있을 때만 활성화
+
+    return Expanded(
+      child: GestureDetector(
+        onTap:
+            isEnabled
+                ? () {
+                  reminderProvider.toggleCompletion(reminderId, timeLabel);
+                }
+                : null,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          decoration: BoxDecoration(
+            color:
+                !isEnabled
+                    ? Colors.grey.shade50
+                    : isCompleted
+                    ? activeColor.withOpacity(0.2)
+                    : activeColor.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color:
+                  !isEnabled
+                      ? Colors.grey.shade200
+                      : isCompleted
+                      ? activeColor
+                      : activeColor.withOpacity(0.3),
+              width: isCompleted ? 2 : 1,
             ),
           ),
-          const SizedBox(width: 8),
-          Row(
-            mainAxisSize: MainAxisSize.min,
+          child: Column(
             children: [
-              IconButton(
-                icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
-                onPressed: () => _showAddReminderDialog(reminder),
-                padding: EdgeInsets.zero,
-                constraints: BoxConstraints(minWidth: 32, minHeight: 32),
+              Icon(
+                isCompleted
+                    ? Icons.check_circle
+                    : isEnabled
+                    ? Icons.circle_outlined
+                    : Icons.remove_circle_outline,
+                size: 16,
+                color:
+                    !isEnabled
+                        ? Colors.grey.shade400
+                        : isCompleted
+                        ? activeColor
+                        : activeColor.withOpacity(0.6),
               ),
-              IconButton(
-                icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                onPressed: () => _deleteReminder(reminder['id']),
-                padding: EdgeInsets.zero,
-                constraints: BoxConstraints(minWidth: 32, minHeight: 32),
+              const SizedBox(height: 4),
+              Text(
+                timeLabel,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isCompleted ? FontWeight.bold : FontWeight.normal,
+                  color:
+                      !isEnabled
+                          ? Colors.grey.shade500
+                          : isCompleted
+                          ? activeColor
+                          : activeColor.withOpacity(0.8),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReminderItem(Map<String, dynamic> reminder) {
+    final textParts = reminder['text'].split(' • ');
+    final medicationName = textParts.isNotEmpty ? textParts[0] : '';
+    final daysText = textParts.length > 1 ? textParts[1] : '';
+    final timeText = textParts.length > 2 ? textParts[2] : '';
+    final noteText = textParts.length > 3 ? textParts[3] : '';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade100,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Color(0xFF174D4D).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.medication,
+                  size: 20,
+                  color: Color(0xFF174D4D),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      medicationName,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF174D4D),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.schedule,
+                          size: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          timeText,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(
+                          Icons.calendar_today,
+                          size: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          daysText,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (noteText.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 14,
+                            color: Colors.grey.shade600,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              noteText,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: IconButton(
+                  icon: Icon(Icons.edit, color: Colors.blue.shade700, size: 18),
+                  onPressed: () => _showAddReminderDialog(reminder),
+                  tooltip: '수정',
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    Icons.delete,
+                    color: Colors.red.shade700,
+                    size: 18,
+                  ),
+                  onPressed: () => _showDeleteConfirmDialog(reminder['id']),
+                  tooltip: '삭제',
+                ),
               ),
             ],
           ),
@@ -632,23 +781,25 @@ class _MedicationScreenState extends State<MedicationScreen> {
     String medicationName = '';
     List<TimeOfDay> selectedTimes = [TimeOfDay.now()];
     List<String> selectedDays = [];
-    String medicationNote = ''; // 약 복용 특이사항
+    String medicationNote = '';
 
     // 수정 모드일 때 기존 데이터 설정
     if (isEditing) {
-      final textParts = existingReminder!['text'].split(' • ');
-      // "C약 • 매일 • 14:00 • 식후 30분" 형태에서 파싱
-      if (textParts.isNotEmpty && textParts[0].contains('약')) {
+      final textParts = existingReminder['text'].split(' • ');
+      if (textParts.isNotEmpty) {
+        // 약 이름 추출 (첫 번째 부분에서 약 이름만 추출)
         medicationName = textParts[0];
       }
-      // 기존 시간들을 파싱하여 selectedTimes에 추가
       selectedTimes = _parseTimesFromText(existingReminder['text']);
       selectedDays = List<String>.from(existingReminder['days']);
-      // 특이사항 파싱 (마지막 부분이 특이사항일 가능성이 높음)
       if (textParts.length > 3) {
         medicationNote = textParts[3];
       }
     }
+
+    // TextEditingController 생성
+    final TextEditingController medicationNameController =
+        TextEditingController(text: medicationName);
 
     showDialog(
       context: context,
@@ -657,7 +808,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
           builder: (context, setState) {
             return AlertDialog(
               title: Text(
-                isEditing ? '알림 수정하기' : '알림 추가하기',
+                isEditing ? '일정 수정하기' : '일정 추가하기',
                 style: TextStyle(
                   color: Color(0xFF174D4D),
                   fontWeight: FontWeight.bold,
@@ -669,7 +820,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
                   children: [
                     // 약 이름 입력
                     TextField(
-                      controller: TextEditingController(text: medicationName),
+                      controller: medicationNameController,
                       decoration: InputDecoration(
                         labelText: '약 이름',
                         hintText: '예: A약, B약',
@@ -680,128 +831,6 @@ class _MedicationScreenState extends State<MedicationScreen> {
                       onChanged: (value) {
                         medicationName = value;
                       },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // 약 복용 특이사항 선택
-                    Text(
-                      '복용 시점',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _buildNoteChip('식전 30분', medicationNote, (selected) {
-                          setState(() {
-                            if (selected) {
-                              medicationNote = '식전 30분';
-                            } else {
-                              medicationNote = '';
-                            }
-                          });
-                        }),
-                        _buildNoteChip('식후 30분', medicationNote, (selected) {
-                          setState(() {
-                            if (selected) {
-                              medicationNote = '식후 30분';
-                            } else {
-                              medicationNote = '';
-                            }
-                          });
-                        }),
-                        _buildNoteChip('기상 후 30분', medicationNote, (selected) {
-                          setState(() {
-                            if (selected) {
-                              medicationNote = '기상 후 30분';
-                            } else {
-                              medicationNote = '';
-                            }
-                          });
-                        }),
-                        _buildNoteChip('취침 전', medicationNote, (selected) {
-                          setState(() {
-                            if (selected) {
-                              medicationNote = '취침 전';
-                            } else {
-                              medicationNote = '';
-                            }
-                          });
-                        }),
-                        _buildNoteChip('공복 시', medicationNote, (selected) {
-                          setState(() {
-                            if (selected) {
-                              medicationNote = '공복 시';
-                            } else {
-                              medicationNote = '';
-                            }
-                          });
-                        }),
-                        _buildNoteChip('즉시 복용', medicationNote, (selected) {
-                          setState(() {
-                            if (selected) {
-                              medicationNote = '즉시 복용';
-                            } else {
-                              medicationNote = '';
-                            }
-                          });
-                        }),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    // 직접 입력 필드
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: TextEditingController(
-                              text:
-                                  medicationNote.isNotEmpty &&
-                                          ![
-                                            '식전 30분',
-                                            '식후 30분',
-                                            '기상 후 30분',
-                                            '취침 전',
-                                            '공복 시',
-                                            '즉시 복용',
-                                          ].contains(medicationNote)
-                                      ? medicationNote
-                                      : '',
-                            ),
-                            decoration: InputDecoration(
-                              labelText: '직접 입력',
-                              hintText: '예: 식후 1시간, 기상 직후',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                            ),
-                            onChanged: (value) {
-                              medicationNote = value;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              medicationNote = '';
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey.shade300,
-                            foregroundColor: Colors.black87,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: Text('초기화'),
-                        ),
-                      ],
                     ),
                     const SizedBox(height: 16),
 
@@ -847,75 +876,48 @@ class _MedicationScreenState extends State<MedicationScreen> {
                                   // 시간 선택
                                   Expanded(
                                     child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
+                                      height: 80,
                                       decoration: BoxDecoration(
                                         border: Border.all(
                                           color: Colors.grey.shade300,
                                         ),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            '${time.hour.toString().padLeft(2, '0')}',
-                                            style: TextStyle(fontSize: 14),
-                                          ),
-                                          Column(
-                                            children: [
-                                              IconButton(
-                                                icon: Icon(
-                                                  Icons.keyboard_arrow_up,
-                                                  size: 16,
-                                                ),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    int newHour = time.hour + 1;
-                                                    if (newHour > 23)
-                                                      newHour = 0;
-                                                    selectedTimes[index] =
-                                                        TimeOfDay(
-                                                          hour: newHour,
-                                                          minute: time.minute,
-                                                        );
-                                                  });
-                                                },
-                                                padding: EdgeInsets.zero,
-                                                constraints: BoxConstraints(
-                                                  minWidth: 24,
-                                                  minHeight: 24,
-                                                ),
-                                              ),
-                                              IconButton(
-                                                icon: Icon(
-                                                  Icons.keyboard_arrow_down,
-                                                  size: 16,
-                                                ),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    int newHour = time.hour - 1;
-                                                    if (newHour < 0)
-                                                      newHour = 23;
-                                                    selectedTimes[index] =
-                                                        TimeOfDay(
-                                                          hour: newHour,
-                                                          minute: time.minute,
-                                                        );
-                                                  });
-                                                },
-                                                padding: EdgeInsets.zero,
-                                                constraints: BoxConstraints(
-                                                  minWidth: 24,
-                                                  minHeight: 24,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
+                                      child: ListWheelScrollView.useDelegate(
+                                        itemExtent: 40,
+                                        physics: FixedExtentScrollPhysics(),
+                                        controller: FixedExtentScrollController(
+                                          initialItem: time.hour,
+                                        ),
+                                        onSelectedItemChanged: (value) {
+                                          setState(() {
+                                            selectedTimes[index] = TimeOfDay(
+                                              hour: value,
+                                              minute: time.minute,
+                                            );
+                                          });
+                                        },
+                                        childDelegate:
+                                            ListWheelChildBuilderDelegate(
+                                              builder: (context, index) {
+                                                if (index < 0 || index > 23)
+                                                  return null;
+                                                return Center(
+                                                  child: Text(
+                                                    index.toString().padLeft(
+                                                      2,
+                                                      '0',
+                                                    ),
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                              childCount: 24,
+                                            ),
                                       ),
                                     ),
                                   ),
@@ -934,77 +936,48 @@ class _MedicationScreenState extends State<MedicationScreen> {
                                   // 분 선택
                                   Expanded(
                                     child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
+                                      height: 80,
                                       decoration: BoxDecoration(
                                         border: Border.all(
                                           color: Colors.grey.shade300,
                                         ),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            '${time.minute.toString().padLeft(2, '0')}',
-                                            style: TextStyle(fontSize: 14),
-                                          ),
-                                          Column(
-                                            children: [
-                                              IconButton(
-                                                icon: Icon(
-                                                  Icons.keyboard_arrow_up,
-                                                  size: 16,
-                                                ),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    int newMinute =
-                                                        time.minute + 5;
-                                                    if (newMinute >= 60)
-                                                      newMinute = 0;
-                                                    selectedTimes[index] =
-                                                        TimeOfDay(
-                                                          hour: time.hour,
-                                                          minute: newMinute,
-                                                        );
-                                                  });
-                                                },
-                                                padding: EdgeInsets.zero,
-                                                constraints: BoxConstraints(
-                                                  minWidth: 24,
-                                                  minHeight: 24,
-                                                ),
-                                              ),
-                                              IconButton(
-                                                icon: Icon(
-                                                  Icons.keyboard_arrow_down,
-                                                  size: 16,
-                                                ),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    int newMinute =
-                                                        time.minute - 5;
-                                                    if (newMinute < 0)
-                                                      newMinute = 55;
-                                                    selectedTimes[index] =
-                                                        TimeOfDay(
-                                                          hour: time.hour,
-                                                          minute: newMinute,
-                                                        );
-                                                  });
-                                                },
-                                                padding: EdgeInsets.zero,
-                                                constraints: BoxConstraints(
-                                                  minWidth: 24,
-                                                  minHeight: 24,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
+                                      child: ListWheelScrollView.useDelegate(
+                                        itemExtent: 40,
+                                        physics: FixedExtentScrollPhysics(),
+                                        controller: FixedExtentScrollController(
+                                          initialItem: time.minute,
+                                        ),
+                                        onSelectedItemChanged: (value) {
+                                          setState(() {
+                                            selectedTimes[index] = TimeOfDay(
+                                              hour: time.hour,
+                                              minute: value,
+                                            );
+                                          });
+                                        },
+                                        childDelegate:
+                                            ListWheelChildBuilderDelegate(
+                                              builder: (context, index) {
+                                                if (index < 0 || index > 59)
+                                                  return null;
+                                                return Center(
+                                                  child: Text(
+                                                    index.toString().padLeft(
+                                                      2,
+                                                      '0',
+                                                    ),
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                              childCount: 60,
+                                            ),
                                       ),
                                     ),
                                   ),
@@ -1171,20 +1144,22 @@ class _MedicationScreenState extends State<MedicationScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    if (medicationName.isNotEmpty &&
+                    final currentMedicationName =
+                        medicationNameController.text.trim();
+                    if (currentMedicationName.isNotEmpty &&
                         selectedDays.isNotEmpty &&
                         selectedTimes.isNotEmpty) {
                       if (isEditing) {
                         _updateReminder(
-                          existingReminder!['id'],
-                          medicationName,
+                          existingReminder['id'],
+                          currentMedicationName,
                           selectedTimes,
                           selectedDays,
                           medicationNote,
                         );
                       } else {
                         _addReminder(
-                          medicationName,
+                          currentMedicationName,
                           selectedTimes,
                           selectedDays,
                           medicationNote,
@@ -1241,6 +1216,54 @@ class _MedicationScreenState extends State<MedicationScreen> {
     );
   }
 
+  // 삭제 확인 다이얼로그를 보여주는 메서드
+  void _showDeleteConfirmDialog(int id) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.warning, color: Colors.orange.shade600, size: 24),
+              const SizedBox(width: 8),
+              Text(
+                '일정 삭제',
+                style: TextStyle(
+                  color: Color(0xFF174D4D),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            '이 복약 일정을 삭제하시겠습니까?\n삭제된 일정은 복구할 수 없습니다.',
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('취소', style: TextStyle(color: Colors.grey.shade600)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _deleteReminder(id);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade600,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text('삭제'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // 알림을 삭제하는 메서드
   void _deleteReminder(int id) {
     final reminderProvider = Provider.of<ReminderProvider>(
@@ -1250,7 +1273,18 @@ class _MedicationScreenState extends State<MedicationScreen> {
     reminderProvider.deleteReminder(id);
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('알림이 삭제되었습니다.'), backgroundColor: Colors.orange),
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Text('일정이 삭제되었습니다.'),
+          ],
+        ),
+        backgroundColor: Colors.orange.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
     );
   }
 
@@ -1268,19 +1302,6 @@ class _MedicationScreenState extends State<MedicationScreen> {
     }
 
     return times.isNotEmpty ? times : [TimeOfDay.now()];
-  }
-
-  // 텍스트에서 시간을 파싱하는 메서드 (단일 시간용)
-  TimeOfDay _parseTimeFromText(String text) {
-    // "매일 14:00 C약 알림" 형태에서 시간 추출
-    final timeRegex = RegExp(r'(\d{1,2}):(\d{2})');
-    final match = timeRegex.firstMatch(text);
-    if (match != null) {
-      final hour = int.parse(match.group(1)!);
-      final minute = int.parse(match.group(2)!);
-      return TimeOfDay(hour: hour, minute: minute);
-    }
-    return TimeOfDay.now();
   }
 
   // 알림을 수정하는 메서드
@@ -1342,367 +1363,266 @@ class _MedicationScreenState extends State<MedicationScreen> {
     );
   }
 
-  Widget _buildNoteChip(
-    String label,
-    String selectedNote,
-    Function(bool) onSelected,
-  ) {
-    bool isSelected = selectedNote == label;
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: onSelected,
-      selectedColor: Color(0xFF174D4D).withOpacity(0.3),
-      checkmarkColor: Color(0xFF174D4D),
-      backgroundColor: Colors.grey.shade100,
-      side: BorderSide(
-        color: isSelected ? Color(0xFF174D4D) : Colors.grey.shade300,
-      ),
-    );
-  }
+  // 오늘의 복용 완료 섹션을 만드는 메서드
+  Widget _buildTodayCompletionSection() {
+    return Consumer<ReminderProvider>(
+      builder: (context, reminderProvider, child) {
+        if (reminderProvider.reminders.isEmpty) {
+          return SizedBox.shrink(); // 알림이 없으면 아무것도 표시하지 않음
+        }
 
-  Widget _buildTodayCompletionButton() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+        // 오늘 복용해야 하는 모든 시간대를 계산
+        int totalRequiredDoses = 0;
+        int completedDoses = 0;
 
-    // 오늘 복용 완료 여부 확인 (실제로는 데이터베이스에서 확인)
-    bool isTodayCompleted = false; // 샘플 데이터
+        for (final reminder in reminderProvider.reminders) {
+          final times = _parseTimesFromText(reminder['text']);
+          final today = DateTime.now();
+          final todayWeekday = _getKoreanWeekday(today.weekday);
+          final days = List<String>.from(reminder['days']);
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isTodayCompleted ? Colors.green.shade50 : Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color:
-              isTodayCompleted ? Colors.green.shade200 : Colors.blue.shade200,
-          width: 2,
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                isTodayCompleted ? Icons.check_circle : Icons.medication,
-                size: 24,
-                color:
-                    isTodayCompleted
-                        ? Colors.green.shade600
-                        : Colors.blue.shade600,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                isTodayCompleted ? '오늘 복용 완료!' : '오늘의 약 복용하기',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color:
-                      isTodayCompleted
-                          ? Colors.green.shade700
-                          : Colors.blue.shade700,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            isTodayCompleted
-                ? '${now.month}월 ${now.day}일 복용을 완료했습니다!'
-                : '오늘(${now.month}월 ${now.day}일) 복용한 약을 체크해주세요.',
-            style: TextStyle(
-              fontSize: 14,
+          if (days.contains(todayWeekday)) {
+            for (final time in times) {
+              final timeOfDay = _getTimeOfDay(
+                '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
+              );
+              totalRequiredDoses++;
+              if (reminderProvider.isCompleted(reminder['id'], timeOfDay)) {
+                completedDoses++;
+              }
+            }
+          }
+        }
+
+        final bool isAllCompleted =
+            totalRequiredDoses > 0 && completedDoses == totalRequiredDoses;
+        final double completionRate =
+            totalRequiredDoses > 0 ? completedDoses / totalRequiredDoses : 0.0;
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isAllCompleted ? Colors.green.shade50 : Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
               color:
-                  isTodayCompleted
-                      ? Colors.green.shade600
-                      : Colors.blue.shade600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                _showTodayCompletionDialog();
-              },
-              icon: Icon(isTodayCompleted ? Icons.check : Icons.add, size: 20),
-              label: Text(
-                isTodayCompleted ? '완료됨' : '복용 완료 체크',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    isTodayCompleted
-                        ? Colors.green.shade600
-                        : Colors.blue.shade600,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
+                  isAllCompleted ? Colors.green.shade200 : Colors.blue.shade200,
+              width: 2,
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMonthlyAchievementGrid() {
-    // 현재 월의 날짜 정보 계산
-    final now = DateTime.now();
-    final currentYear = now.year;
-    final currentMonth = now.month;
-    final currentDay = now.day;
-
-    // 현재 월의 첫 번째 날짜와 마지막 날짜
-    final firstDayOfMonth = DateTime(currentYear, currentMonth, 1);
-    final lastDayOfMonth = DateTime(currentYear, currentMonth + 1, 0);
-
-    // 첫 번째 날짜의 요일 (0: 일요일, 1: 월요일, ..., 6: 토요일)
-    final firstDayWeekday = firstDayOfMonth.weekday % 7; // 일요일을 0으로 변환
-    final daysInMonth = lastDayOfMonth.day;
-
-    // 샘플 데이터 (실제로는 데이터베이스에서 가져와야 함)
-    List<int> dailyPercentages = List.generate(daysInMonth, (index) {
-      // 랜덤한 달성률 생성 (실제 구현에서는 실제 데이터 사용)
-      return 60 + (index * 2) % 40; // 60-99% 범위
-    });
-
-    // 전체 주 수 계산 (첫 주의 빈 칸 + 날짜 수)
-    final totalWeeks = ((firstDayWeekday + daysInMonth) / 7).ceil();
-
-    return Column(
-      children: [
-        // 월 표시
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12.0),
-          child: Text(
-            '${currentYear}년 ${currentMonth}월',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF174D4D),
-            ),
-          ),
-        ),
-        // 요일 헤더
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children:
-              ['일', '월', '화', '수', '목', '금', '토'].map((day) {
-                return SizedBox(
-                  width: 35.0,
-                  child: Text(
-                    day,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF174D4D),
-                    ),
-                    textAlign: TextAlign.center,
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    isAllCompleted ? Icons.check_circle : Icons.medication,
+                    size: 24,
+                    color:
+                        isAllCompleted
+                            ? Colors.green.shade600
+                            : Colors.blue.shade600,
                   ),
-                );
-              }).toList(),
-        ),
-        const SizedBox(height: 8),
-        // 날짜 그리드
-        ...List.generate(totalWeeks, (weekIndex) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(7, (dayIndex) {
-                final gridIndex = weekIndex * 7 + dayIndex;
-
-                // 첫 주의 빈 칸들
-                if (gridIndex < firstDayWeekday) {
-                  return const SizedBox(width: 35.0, height: 35.0);
-                }
-
-                // 월의 날짜 범위를 벗어나는 경우
-                final dayNumber = gridIndex - firstDayWeekday + 1;
-                if (dayNumber > daysInMonth) {
-                  return const SizedBox(width: 35.0, height: 35.0);
-                }
-
-                final percentage = dailyPercentages[dayNumber - 1];
-                final isToday = dayNumber == currentDay;
-
-                return _buildDailyAchievementItem(
-                  dayNumber,
-                  percentage,
-                  isToday,
-                );
-              }),
-            ),
-          );
-        }),
-      ],
-    );
-  }
-
-  void _showTodayCompletionDialog() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.medication, color: Color(0xFF174D4D), size: 28),
-              const SizedBox(width: 8),
-              Text(
-                '오늘의 복용 완료',
-                style: TextStyle(
-                  color: Color(0xFF174D4D),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${now.month}월 ${now.day}일 복용을 완료하셨나요?',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 16),
-              Consumer<ReminderProvider>(
-                builder: (context, reminderProvider, child) {
-                  final todayMedications = _getTodayMedications(
-                    reminderProvider.reminders,
-                  );
-
-                  if (todayMedications.isEmpty) {
-                    return Text(
-                      '오늘 복용할 약이 없습니다',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade700,
-                      ),
-                    );
-                  }
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children:
-                        todayMedications.map((medication) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 4.0),
-                            child: Text(
-                              '• ${medication['name']} (${medication['time']})',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey.shade700,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.check_circle,
-                      color: Colors.green.shade600,
-                      size: 20,
+                  const SizedBox(width: 8),
+                  Text(
+                    isAllCompleted ? '오늘 복용 완료!' : '오늘의 복용 현황',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color:
+                          isAllCompleted
+                              ? Colors.green.shade700
+                              : Colors.blue.shade700,
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '복용 완료 시 오늘 날짜에 스탬프가 찍힙니다!',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.green.shade700,
-                          fontWeight: FontWeight.w500,
-                        ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // 진행률 표시
+              if (totalRequiredDoses > 0) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '$completedDoses/$totalRequiredDoses 복용',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color:
+                            isAllCompleted
+                                ? Colors.green.shade700
+                                : Colors.blue.shade700,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      '(${(completionRate * 100).toInt()}%)',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color:
+                            isAllCompleted
+                                ? Colors.green.shade600
+                                : Colors.blue.shade600,
                       ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 12),
+                // 진행률 바
+                Container(
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: completionRate,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color:
+                            isAllCompleted
+                                ? Colors.green.shade500
+                                : Colors.blue.shade500,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              Text(
+                isAllCompleted
+                    ? '오늘 모든 약을 복용하셨습니다! 🎉'
+                    : totalRequiredDoses > 0
+                    ? '위의 체크박스를 눌러 복용을 완료해주세요.'
+                    : '오늘 복용할 약이 없습니다.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color:
+                      isAllCompleted
+                          ? Colors.green.shade600
+                          : Colors.blue.shade600,
+                ),
+                textAlign: TextAlign.center,
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('취소', style: TextStyle(color: Colors.grey.shade600)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                // 실제로는 데이터베이스에 복용 완료 기록을 저장
-                _completeTodayMedication();
-                Navigator.of(context).pop();
+        );
+      },
+    );
+  }
 
-                // 성공 메시지 표시
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: [
-                        Icon(Icons.check_circle, color: Colors.white, size: 20),
-                        const SizedBox(width: 8),
-                        Text('오늘의 복용이 완료되었습니다! 🎉'),
-                      ],
-                    ),
-                    backgroundColor: Colors.green.shade600,
-                    duration: const Duration(seconds: 3),
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF174D4D),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+  Widget _buildMonthlyAchievementGrid() {
+    return Consumer<ReminderProvider>(
+      builder: (context, reminderProvider, child) {
+        // 현재 월의 날짜 정보 계산
+        final now = DateTime.now();
+        final currentYear = now.year;
+        final currentMonth = now.month;
+        final currentDay = now.day;
+
+        // 현재 월의 첫 번째 날짜와 마지막 날짜
+        final firstDayOfMonth = DateTime(currentYear, currentMonth, 1);
+        final lastDayOfMonth = DateTime(currentYear, currentMonth + 1, 0);
+
+        // 첫 번째 날짜의 요일 (0: 일요일, 1: 월요일, ..., 6: 토요일)
+        final firstDayWeekday = firstDayOfMonth.weekday % 7; // 일요일을 0으로 변환
+        final daysInMonth = lastDayOfMonth.day;
+
+        // 실제 복용 달성률 데이터 가져오기
+        final monthlyRates = reminderProvider.getMonthlyCompletionRates(
+          currentYear,
+          currentMonth,
+        );
+
+        // 전체 주 수 계산 (첫 주의 빈 칸 + 날짜 수)
+        final totalWeeks = ((firstDayWeekday + daysInMonth) / 7).ceil();
+
+        return Column(
+          children: [
+            // 월 표시
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: Text(
+                '${currentYear}년 ${currentMonth}월',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF174D4D),
                 ),
               ),
-              child: Text('복용 완료'),
             ),
+            // 요일 헤더
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children:
+                  ['일', '월', '화', '수', '목', '금', '토'].map((day) {
+                    return SizedBox(
+                      width: 35.0,
+                      child: Text(
+                        day,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF174D4D),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    );
+                  }).toList(),
+            ),
+            const SizedBox(height: 8),
+            // 날짜 그리드
+            ...List.generate(totalWeeks, (weekIndex) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: List.generate(7, (dayIndex) {
+                    final gridIndex = weekIndex * 7 + dayIndex;
+
+                    // 첫 주의 빈 칸들
+                    if (gridIndex < firstDayWeekday) {
+                      return const SizedBox(width: 35.0, height: 35.0);
+                    }
+
+                    // 월의 날짜 범위를 벗어나는 경우
+                    final dayNumber = gridIndex - firstDayWeekday + 1;
+                    if (dayNumber > daysInMonth) {
+                      return const SizedBox(width: 35.0, height: 35.0);
+                    }
+
+                    // 실제 달성률 데이터 사용
+                    final completionRate = monthlyRates[dayNumber] ?? 0.0;
+                    final isToday = dayNumber == currentDay;
+                    final isFutureDate = completionRate == -1;
+
+                    return _buildDailyAchievementItem(
+                      dayNumber,
+                      completionRate,
+                      isToday,
+                      isFutureDate,
+                    );
+                  }),
+                ),
+              );
+            }),
           ],
         );
       },
     );
   }
 
-  void _completeTodayMedication() {
-    // 실제로는 데이터베이스에 복용 완료 기록을 저장하는 로직
-    // 예: Provider를 통해 복용 기록을 업데이트
-    print('오늘의 복용이 완료되었습니다: ${DateTime.now()}');
-
-    // 화면 새로고침 (실제로는 Provider를 통해 상태 업데이트)
-    setState(() {
-      // 상태 업데이트 로직
-    });
-  }
-
   Widget _buildDailyAchievementItem(
     int day,
-    int percentage, [
+    double completionRate, [
     bool isToday = false,
+    bool isFutureDate = false,
   ]) {
-    // 80% 이상이면 완료로 간주
-    bool isCompleted = percentage >= 80;
+    // 80% 이상이면 완료로 간주, 미래 날짜는 미완료로 처리
+    bool isCompleted = !isFutureDate && completionRate >= 80;
 
     return GestureDetector(
       onTap: () {
@@ -1713,19 +1633,14 @@ class _MedicationScreenState extends State<MedicationScreen> {
         height: 35.0,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color:
-              isToday
-                  ? Colors.blue.shade300
-                  : (isCompleted
-                      ? Colors.green.shade400
-                      : Colors.grey.shade200),
+          color: _getDayBackgroundColor(
+            isToday,
+            isCompleted,
+            isFutureDate,
+            completionRate,
+          ),
           border: Border.all(
-            color:
-                isToday
-                    ? Colors.blue.shade600
-                    : (isCompleted
-                        ? Colors.green.shade600
-                        : Colors.grey.shade400),
+            color: _getDayBorderColor(isToday, isCompleted, isFutureDate),
             width: isToday ? 2.0 : 1.5,
           ),
           boxShadow:
@@ -1745,9 +1660,31 @@ class _MedicationScreenState extends State<MedicationScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (isCompleted) ...[
+            if (isFutureDate) ...[
+              // 미래 날짜는 날짜만 표시
+              Text(
+                '$day',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade400,
+                ),
+              ),
+            ] else if (isCompleted) ...[
+              // 완료된 날짜는 체크 아이콘
               Icon(Icons.check_circle, size: 16.0, color: Colors.white),
+            ] else if (completionRate > 0) ...[
+              // 부분 완료된 날짜는 퍼센트 표시
+              Text(
+                '${completionRate.round()}%',
+                style: TextStyle(
+                  fontSize: 8,
+                  fontWeight: FontWeight.w600,
+                  color: isToday ? Colors.white : Colors.grey.shade700,
+                ),
+              ),
             ] else ...[
+              // 미완료 날짜는 날짜만 표시
               Text(
                 '$day',
                 style: TextStyle(
@@ -1763,93 +1700,38 @@ class _MedicationScreenState extends State<MedicationScreen> {
     );
   }
 
-  Widget _buildAchievementItem(
-    String day,
-    int percentage,
-    bool isSeniorMode,
-    double fontSize,
+  // 날짜별 배경색을 결정하는 헬퍼 메서드
+  Color _getDayBackgroundColor(
+    bool isToday,
+    bool isCompleted,
+    bool isFutureDate,
+    double completionRate,
   ) {
-    // 80% 이상이면 완료로 간주
-    bool isCompleted = percentage >= 80;
+    if (isToday) {
+      return Colors.blue.shade300;
+    } else if (isFutureDate) {
+      return Colors.grey.shade100;
+    } else if (isCompleted) {
+      return Colors.green.shade400;
+    } else if (completionRate > 50) {
+      return Colors.orange.shade300;
+    } else if (completionRate > 0) {
+      return Colors.red.shade300;
+    } else {
+      return Colors.grey.shade200;
+    }
+  }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Column(
-        children: [
-          Text(
-            day,
-            style: TextStyle(
-              fontSize: fontSize - 2,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF174D4D),
-            ),
-          ),
-          const SizedBox(height: 8),
-          GestureDetector(
-            onTap: () {
-              // 스탬프 클릭 시 상세 정보 표시 (선택사항)
-            },
-            child: Container(
-              width: 45.0,
-              height: 45.0,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color:
-                    isCompleted ? Colors.green.shade400 : Colors.grey.shade200,
-                border: Border.all(
-                  color:
-                      isCompleted
-                          ? Colors.green.shade600
-                          : Colors.grey.shade400,
-                  width: 2,
-                ),
-                boxShadow:
-                    isCompleted
-                        ? [
-                          BoxShadow(
-                            color: Colors.green.shade200,
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                        : null,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (isCompleted) ...[
-                    Icon(Icons.check_circle, size: 20.0, color: Colors.white),
-                    const SizedBox(height: 2),
-                    Text(
-                      '완료',
-                      style: TextStyle(
-                        fontSize: fontSize - 4,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ] else ...[
-                    Icon(
-                      Icons.medication,
-                      size: 18.0,
-                      color: Colors.grey.shade600,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$percentage%',
-                      style: TextStyle(
-                        fontSize: fontSize - 4,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  // 날짜별 테두리색을 결정하는 헬퍼 메서드
+  Color _getDayBorderColor(bool isToday, bool isCompleted, bool isFutureDate) {
+    if (isToday) {
+      return Colors.blue.shade600;
+    } else if (isFutureDate) {
+      return Colors.grey.shade300;
+    } else if (isCompleted) {
+      return Colors.green.shade600;
+    } else {
+      return Colors.grey.shade400;
+    }
   }
 }

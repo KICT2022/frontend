@@ -5,12 +5,17 @@ class MedicationProvider extends ChangeNotifier {
   List<Medication> _medications = [];
   List<MedicationSchedule> _schedules = [];
   List<MedicationReminder> _reminders = [];
+  List<MedicationDosage> _todayDosages = [];
+  List<IntegratedMedicationReminder> _integratedReminders = [];
   final List<String> _selectedSymptoms = [];
   bool _isLoading = false;
 
   List<Medication> get medications => _medications;
   List<MedicationSchedule> get schedules => _schedules;
   List<MedicationReminder> get reminders => _reminders;
+  List<MedicationDosage> get todayDosages => _todayDosages;
+  List<IntegratedMedicationReminder> get integratedReminders =>
+      _integratedReminders;
   List<String> get selectedSymptoms => _selectedSymptoms;
   bool get isLoading => _isLoading;
 
@@ -54,6 +59,14 @@ class MedicationProvider extends ChangeNotifier {
       ),
       MedicationSchedule(
         id: '2',
+        medicationId: '1',
+        medicationName: 'A약',
+        time: const TimeOfDay(hour: 20, minute: 0),
+        daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+        note: '식후 30분',
+      ),
+      MedicationSchedule(
+        id: '3',
         medicationId: '2',
         medicationName: 'B약',
         time: const TimeOfDay(hour: 12, minute: 0),
@@ -92,12 +105,126 @@ class MedicationProvider extends ChangeNotifier {
       // 실제 구현에서는 API 호출
       await Future.delayed(const Duration(milliseconds: 500));
       _loadSampleData();
+      _generateTodayDosages();
+      _generateIntegratedReminders();
       _isLoading = false;
       notifyListeners();
     } catch (e) {
       _isLoading = false;
       notifyListeners();
       rethrow;
+    }
+  }
+
+  // 오늘의 복용 목록 생성
+  void _generateTodayDosages() {
+    final today = DateTime.now().weekday;
+    _todayDosages.clear();
+
+    // 스케줄에서 오늘 복용할 약들 생성
+    for (final schedule in _schedules) {
+      if (schedule.daysOfWeek.contains(today) && schedule.isActive) {
+        _todayDosages.add(
+          MedicationDosage(
+            id: '${schedule.id}_${DateTime.now().millisecondsSinceEpoch}',
+            medicationId: schedule.medicationId,
+            medicationName: schedule.medicationName,
+            time: schedule.time,
+            note: schedule.note,
+          ),
+        );
+      }
+    }
+
+    // 리마인더에서 오늘 복용할 약들 생성
+    for (final reminder in _reminders) {
+      if (reminder.daysOfWeek.contains(today) && reminder.isActive) {
+        _todayDosages.add(
+          MedicationDosage(
+            id: '${reminder.id}_${DateTime.now().millisecondsSinceEpoch}',
+            medicationId: reminder.medicationId,
+            medicationName: reminder.medicationName,
+            time: reminder.time,
+            note: reminder.message,
+          ),
+        );
+      }
+    }
+  }
+
+  // 통합된 약 알림 생성 (같은 약의 여러 시간대를 하나로 묶음)
+  void _generateIntegratedReminders() {
+    _integratedReminders.clear();
+
+    // 약 ID별로 그룹화
+    final Map<String, List<MedicationDosage>> groupedDosages = {};
+
+    for (final dosage in _todayDosages) {
+      if (!groupedDosages.containsKey(dosage.medicationId)) {
+        groupedDosages[dosage.medicationId] = [];
+      }
+      groupedDosages[dosage.medicationId]!.add(dosage);
+    }
+
+    // 각 그룹을 통합된 알림으로 변환
+    for (final entry in groupedDosages.entries) {
+      final dosages = entry.value;
+      if (dosages.isNotEmpty) {
+        _integratedReminders.add(
+          IntegratedMedicationReminder.fromDosages(dosages),
+        );
+      }
+    }
+  }
+
+  // 복용 완료 처리
+  Future<void> completeDosage(String dosageId) async {
+    final dosageIndex = _todayDosages.indexWhere((d) => d.id == dosageId);
+    if (dosageIndex != -1) {
+      final dosage = _todayDosages[dosageIndex];
+      _todayDosages[dosageIndex] = dosage.copyWith(
+        isCompleted: true,
+        completedAt: DateTime.now(),
+      );
+
+      // 통합된 알림도 업데이트
+      _generateIntegratedReminders();
+      notifyListeners();
+    }
+  }
+
+  // 복용 취소 처리
+  Future<void> uncompleteDosage(String dosageId) async {
+    final dosageIndex = _todayDosages.indexWhere((d) => d.id == dosageId);
+    if (dosageIndex != -1) {
+      final dosage = _todayDosages[dosageIndex];
+      _todayDosages[dosageIndex] = dosage.copyWith(
+        isCompleted: false,
+        completedAt: null,
+      );
+
+      // 통합된 알림도 업데이트
+      _generateIntegratedReminders();
+      notifyListeners();
+    }
+  }
+
+  // 특정 시간대의 복용 완료 처리
+  Future<void> completeDosageByTime(String medicationId, TimeOfDay time) async {
+    final dosageIndex = _todayDosages.indexWhere(
+      (d) => d.medicationId == medicationId && d.time == time,
+    );
+
+    if (dosageIndex != -1) {
+      final dosage = _todayDosages[dosageIndex];
+      _todayDosages[dosageIndex] = dosage.copyWith(
+        isCompleted: true,
+        completedAt: DateTime.now(),
+      );
+
+      // 통합된 알림도 업데이트
+      _generateIntegratedReminders();
+      notifyListeners();
     }
   }
 
@@ -158,6 +285,8 @@ class MedicationProvider extends ChangeNotifier {
 
   Future<void> addMedicationSchedule(MedicationSchedule schedule) async {
     _schedules.add(schedule);
+    _generateTodayDosages();
+    _generateIntegratedReminders();
     notifyListeners();
   }
 
@@ -165,17 +294,23 @@ class MedicationProvider extends ChangeNotifier {
     final index = _schedules.indexWhere((s) => s.id == schedule.id);
     if (index != -1) {
       _schedules[index] = schedule;
+      _generateTodayDosages();
+      _generateIntegratedReminders();
       notifyListeners();
     }
   }
 
   Future<void> deleteMedicationSchedule(String scheduleId) async {
     _schedules.removeWhere((s) => s.id == scheduleId);
+    _generateTodayDosages();
+    _generateIntegratedReminders();
     notifyListeners();
   }
 
   Future<void> addMedicationReminder(MedicationReminder reminder) async {
     _reminders.add(reminder);
+    _generateTodayDosages();
+    _generateIntegratedReminders();
     notifyListeners();
   }
 
@@ -183,12 +318,16 @@ class MedicationProvider extends ChangeNotifier {
     final index = _reminders.indexWhere((r) => r.id == reminder.id);
     if (index != -1) {
       _reminders[index] = reminder;
+      _generateTodayDosages();
+      _generateIntegratedReminders();
       notifyListeners();
     }
   }
 
   Future<void> deleteMedicationReminder(String reminderId) async {
     _reminders.removeWhere((r) => r.id == reminderId);
+    _generateTodayDosages();
+    _generateIntegratedReminders();
     notifyListeners();
   }
 
