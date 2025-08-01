@@ -177,7 +177,10 @@ class ApiService {
               message.contains('틀림') ||
               message.contains('invalid') ||
               message.contains('incorrect') ||
-              message.contains('wrong')) {
+              message.contains('wrong') ||
+              message.contains('이미 등록된') ||
+              message.contains('중복') ||
+              message.contains('duplicate')) {
             isSuccess = false;
           }
         }

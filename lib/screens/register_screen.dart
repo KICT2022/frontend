@@ -678,6 +678,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         keyboardType: TextInputType.number,
                         textInputAction: TextInputAction.next,
                         onFieldSubmitted: (_) {
+                          // 인증 코드 입력 완료 시 비밀번호 필드로 포커스 이동
                           _passwordFocusNode.requestFocus();
                         },
                         decoration: InputDecoration(
@@ -788,6 +789,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   obscureText: !_isPasswordVisible,
                   textInputAction: TextInputAction.next,
                   onFieldSubmitted: (_) {
+                    // 비밀번호 입력 완료 시 비밀번호 확인 필드로 포커스 이동
                     _confirmPasswordFocusNode.requestFocus();
                   },
                   decoration: InputDecoration(
@@ -851,8 +853,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   controller: _confirmPasswordController,
                   focusNode: _confirmPasswordFocusNode,
                   obscureText: !_isConfirmPasswordVisible,
-                  textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) => _register(),
+                  textInputAction: TextInputAction.next,
+                  onFieldSubmitted: (_) {
+                    // 자동 회원가입 방지 - 회원가입 버튼을 직접 클릭해야만 실행
+                    // 포커스만 해제
+                  },
                   decoration: InputDecoration(
                     labelText: '비밀번호 확인',
                     prefixIcon: const Icon(Icons.lock_outline),

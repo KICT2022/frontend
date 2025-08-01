@@ -57,39 +57,86 @@ class UserService {
     required String phoneNumber,
   }) async {
     try {
-      final response = await _apiService.post(
-        ApiConfig.registerUrl,
-        data: {
-          'name': name,
-          'email': email,
-          'password': password,
-          'passwordConfirm': passwordConfirm,
-          'gender': gender,
-          'birthDate': birthDate,
-          'phoneNumber': phoneNumber,
-        },
+      print('🔍 회원가입 요청: email=$email, name=$name');
+
+      final requestData = {
+        'name': name,
+        'email': email,
+        'password': password,
+        'passwordConfirm': passwordConfirm,
+        'gender': gender,
+        'birthDate': birthDate,
+        'phoneNumber': phoneNumber,
+        'emailVerified': true, // 이메일 인증 완료 플래그 추가
+      };
+
+      print('📤 회원가입 요청 데이터: $requestData');
+      print('📤 회원가입 URL: ${ApiConfig.registerUrl}');
+
+      // 이메일 인증이 완료된 상태에서 회원가입 요청
+      final registerUrl = '${ApiConfig.registerUrl}?emailVerified=true';
+      final response = await _apiService.post(registerUrl, data: requestData);
+
+      print(
+        '📡 회원가입 서버 응답: success=${response.success}, statusCode=${response.statusCode}',
       );
+      print('📄 회원가입 응답 데이터: ${response.data}');
+      print('📄 회원가입 응답 데이터 타입: ${response.data.runtimeType}');
+
+      if (response.data != null && response.data is Map<String, dynamic>) {
+        final data = response.data as Map<String, dynamic>;
+        print('🔍 회원가입 응답 데이터 키들: ${data.keys.toList()}');
+        data.forEach((key, value) {
+          print('  $key: $value (${value.runtimeType})');
+        });
+      }
+
+      // HTTP 상태 코드도 확인
+      print('📊 HTTP 상태 코드: ${response.statusCode}');
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        print('❌ HTTP 오류 상태 코드: ${response.statusCode}');
+      }
 
       if (response.success && response.data != null) {
-        final data = response.data as Map<String, dynamic>;
+        // String 형태의 응답 처리 (서버에서 "회원가입 완료" 등으로 응답)
+        if (response.data is String) {
+          final responseString = response.data as String;
+          print('✅ String 응답으로 회원가입 성공: $responseString');
+          return AuthResult(success: true, message: responseString);
+        }
 
-        // 회원가입 후 자동 로그인 처리
-        if (data.containsKey('access_token')) {
-          final accessToken = data['access_token'] as String;
-          final refreshToken = data['refresh_token'] as String;
-          await _apiService.saveTokens(accessToken, refreshToken);
+        // Map 형태의 응답 처리
+        if (response.data is Map<String, dynamic>) {
+          final data = response.data as Map<String, dynamic>;
 
-          final userData = data['user'] as Map<String, dynamic>;
-          final user = User.fromJson(userData);
+          // 회원가입 후 자동 로그인 처리
+          if (data.containsKey('access_token')) {
+            final accessToken = data['access_token'] as String;
+            final refreshToken = data['refresh_token'] as String;
+            await _apiService.saveTokens(accessToken, refreshToken);
 
-          return AuthResult(success: true, user: user);
+            final userData = data['user'] as Map<String, dynamic>;
+            final user = User.fromJson(userData);
+
+            return AuthResult(success: true, user: user);
+          }
+
+          return AuthResult(success: true, message: '회원가입이 완료되었습니다.');
         }
 
         return AuthResult(success: true, message: '회원가입이 완료되었습니다.');
       }
 
-      return AuthResult(success: false, error: '회원가입에 실패했습니다.');
+      // 서버에서 받은 에러 메시지 사용
+      String errorMessage = '회원가입에 실패했습니다.';
+      if (response.data != null && response.data is Map<String, dynamic>) {
+        final data = response.data as Map<String, dynamic>;
+        errorMessage = data['message'] ?? data['error'] ?? errorMessage;
+      }
+
+      return AuthResult(success: false, error: errorMessage);
     } catch (e) {
+      print('❌ 회원가입 중 예외 발생: $e');
       return AuthResult(success: false, error: '회원가입 중 오류가 발생했습니다: $e');
     }
   }
