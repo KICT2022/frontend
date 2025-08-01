@@ -547,7 +547,7 @@ class NotificationService {
             baseId * 1000 + (weekday - 1) * 10 + timeIndex;
 
         print(
-          '알림 설정: $medicationName - ${day} ${time.hour}:${time.minute} - ID: $notificationId - 예정시간: $nextDate',
+          '알림 설정: $medicationName - $day ${time.hour}:${time.minute} - ID: $notificationId - 예정시간: $nextDate',
         );
 
         // 정시 알림 설정

@@ -16,7 +16,7 @@ class MedicationSearchResultScreen extends StatefulWidget {
 class _MedicationSearchResultScreenState
     extends State<MedicationSearchResultScreen> {
   bool _isLoading = true;
-  List<Medication> _searchResults = [];
+  final List<Medication> _searchResults = [];
   String? _errorMessage;
   String? _drugInfo;
 

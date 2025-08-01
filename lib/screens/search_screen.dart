@@ -23,17 +23,17 @@ class _SearchScreenState extends State<SearchScreen> {
   // 약물 입력 칸 개수를 관리하는 변수 추가
   int _drugInputCount = 2;
   // 약물 입력 칸들의 TextEditingController 리스트
-  List<TextEditingController> _drugControllers = [];
+  final List<TextEditingController> _drugControllers = [];
   // 입력 검증 메시지
   String? _validationMessage;
   // 증상 입력 필드 컨트롤러
-  TextEditingController _symptomInputController = TextEditingController();
+  final TextEditingController _symptomInputController = TextEditingController();
 
   // 약 추천 관련 상태 변수
   bool _isLoadingRecommendation = false;
   String? _recommendationResult;
   String? _recommendationError;
-  List<Map<String, String>> _parsedMedications = [];
+  final List<Map<String, String>> _parsedMedications = [];
   final PageController _medicationPageController = PageController();
   int _currentMedicationPage = 0;
 
@@ -616,13 +616,70 @@ class _SearchScreenState extends State<SearchScreen> {
             const SizedBox(height: 16),
 
             // 지금 내 증상은 섹션
-            Text(
-              '지금 내 증상은',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF174D4D),
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '지금 내 증상은',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF174D4D),
+                  ),
+                ),
+                Consumer<MedicationProvider>(
+                  builder: (context, medicationProvider, child) {
+                    return medicationProvider.selectedSymptoms.isNotEmpty
+                        ? GestureDetector(
+                          onTap: () {
+                            // 전체 증상 삭제
+                            medicationProvider.clearSymptoms();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('선택된 증상이 모두 삭제되었습니다.'),
+                                backgroundColor: Colors.orange,
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade100,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Colors.red.shade300,
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.delete_sweep,
+                                  size: 16,
+                                  color: Colors.red.shade600,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '전체 삭제',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.red.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                        : const SizedBox.shrink();
+                  },
+                ),
+              ],
             ),
             const SizedBox(height: 16),
 
@@ -758,8 +815,25 @@ class _SearchScreenState extends State<SearchScreen> {
       print('🔍 약 추천 요청: $selectedSymptoms');
 
       // 증상에 대한 약 추천 프롬프트 생성
-      final prompt =
-          '다음 증상들에 대한 구체적인 약물명과 정보를 알려주세요: $selectedSymptoms. 각 약의 정확한 이름, 효능, 복용법, 주의사항을 명확히 구분해서 작성해주세요. 증상이 아닌 실제 약물명을 추천해주세요.';
+      final prompt = '''
+다음 증상들에 대한 구체적인 약물명과 정보를 알려주세요: $selectedSymptoms
+
+다음 형식으로 정확히 작성해주세요:
+
+1. **약물명:** [정확한 약물명]
+   - **효능:** [약물의 효능과 작용]
+   - **복용법:** [구체적인 복용 방법과 용량]
+   - **부작용:** [주요 부작용]
+   - **주의사항:** [복용 시 주의사항]
+
+2. **약물명:** [정확한 약물명]
+   - **효능:** [약물의 효능과 작용]
+   - **복용법:** [구체적인 복용 방법과 용량]
+   - **부작용:** [주요 부작용]
+   - **주의사항:** [복용 시 주의사항]
+
+증상이 아닌 실제 약물명을 추천해주시고, 각 약물의 정보를 명확히 구분해서 작성해주세요.
+''';
 
       // API 호출
       final result = await _apiManager.sendChatMessage(prompt);
@@ -787,15 +861,6 @@ class _SearchScreenState extends State<SearchScreen> {
         setState(() {
           _currentMedicationPage = 0;
         });
-
-        // PageController 초기화 (첫 번째 페이지로 이동)
-        if (_parsedMedications.length > 1) {
-          _medicationPageController.animateToPage(
-            0,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
-        }
 
         // 추천 결과 화면으로 이동
         _showRecommendationResult();
@@ -830,6 +895,22 @@ class _SearchScreenState extends State<SearchScreen> {
 
   // 추천 결과 화면 표시
   void _showRecommendationResult() {
+    // PageController가 안전하게 초기화되도록 지연 실행
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_parsedMedications.length > 1 &&
+          _medicationPageController.hasClients) {
+        try {
+          _medicationPageController.animateToPage(
+            0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        } catch (e) {
+          print('PageController 초기화 오류: $e');
+        }
+      }
+    });
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -846,106 +927,100 @@ class _SearchScreenState extends State<SearchScreen> {
     List<String> lines = result.split('\n');
     Map<String, String> currentMedication = {};
 
-    // 증상 키워드 목록 (약물명으로 잘못 파싱되는 것을 방지)
-    final List<String> symptomKeywords = [
-      '두통',
-      '발열',
-      '기침',
-      '복통',
-      '메스꺼움',
-      '설사',
-      '어지럼증',
-      '피로감',
-      '식욕저하',
-      '체중감소',
-      '오한',
-      '피로',
-      '무기력',
-      '식욕 저하',
-      '체중 감소',
-      '눈충혈',
-      '코막힘',
-      '귀통증',
-      '치통',
-      '가래',
-      '인후통',
-      '목쉼',
-      '호흡곤란',
-      '열이 남',
-      '몸이 떨림',
-      '무기력',
-      '목이 아파요',
-      '목 쉼',
-      '음성 변화',
-      '숨참',
-      '배가 아파요',
-      '구토',
-      '눈 충혈',
-      '가려움',
-      '통증',
-      '콧물',
-      '이명',
-      '귀막힘',
-      '이가 아파요',
-    ];
+    // 약물 정보 섹션 키워드
+    final Map<String, List<String>> sectionKeywords = {
+      'name': ['약물명:', '약명:', '약:', '약물:', '**약물명:', '**약명:'],
+      'description': ['효능:', '효과:', '작용:', '**효능:', '**효과:', '**작용:'],
+      'usage': ['복용법:', '용법:', '투여법:', '**복용법:', '**용법:', '**투여법:'],
+      'sideEffects': ['부작용:', '**부작용:'],
+      'precautions': ['주의사항:', '주의:', '금기:', '**주의사항:', '**주의:', '**금기:'],
+    };
 
     for (String line in lines) {
       line = line.trim();
       if (line.isEmpty) continue;
 
-      // 약 이름 패턴 (숫자로 시작하거나 "약:", "약물:" 등으로 시작)
-      if (RegExp(
-        r'^\d+\.|^약:|^약물:|^[가-힣]+약|^[가-힣]+제|^[가-힣]+정|^[가-힣]+캡슐|^[가-힣]+시럽|^[가-힣]+액',
-      ).hasMatch(line)) {
-        // 이전 약 정보가 있으면 저장
+      // 새로운 약물 시작 패턴 확인
+      bool isNewMedication = false;
+      String medicationName = '';
+
+      // 약물명 패턴 확인 (숫자. 로 시작하거나 **약물명: 형태)
+      if (RegExp(r'^\d+\.\s*\*\*약물명:').hasMatch(line)) {
+        isNewMedication = true;
+        medicationName =
+            line.replaceAll(RegExp(r'^\d+\.\s*\*\*약물명:\s*'), '').trim();
+      } else if (RegExp(r'^\d+\.\s*약물명:').hasMatch(line)) {
+        isNewMedication = true;
+        medicationName =
+            line.replaceAll(RegExp(r'^\d+\.\s*약물명:\s*'), '').trim();
+      } else if (RegExp(r'^\*\*약물명:').hasMatch(line)) {
+        isNewMedication = true;
+        medicationName = line.replaceAll(RegExp(r'^\*\*약물명:\s*'), '').trim();
+      } else if (RegExp(r'^약물명:').hasMatch(line)) {
+        isNewMedication = true;
+        medicationName = line.replaceAll(RegExp(r'^약물명:\s*'), '').trim();
+      }
+
+      if (isNewMedication && medicationName.isNotEmpty) {
+        // 이전 약물 정보가 있으면 저장
         if (currentMedication.isNotEmpty) {
           _parsedMedications.add(Map.from(currentMedication));
         }
 
-        // 새로운 약 시작
-        String medicationName =
-            line.replaceAll(RegExp(r'^\d+\.|^약:|^약물:'), '').trim();
-
-        // 증상이 아닌 실제 약물명인지 확인
-        bool isSymptom = symptomKeywords.any(
-          (symptom) =>
-              medicationName.contains(symptom) ||
-              symptom.contains(medicationName),
-        );
-
-        if (!isSymptom && medicationName.length > 1) {
-          currentMedication = {
-            'name': medicationName,
-            'description': '',
-            'usage': '',
-            'precautions': '',
-          };
-        }
+        // 새로운 약물 시작
+        currentMedication = {
+          'name': medicationName,
+          'description': '',
+          'usage': '',
+          'sideEffects': '',
+          'precautions': '',
+        };
       } else if (currentMedication.isNotEmpty) {
-        // 효능, 복용법, 주의사항 키워드 확인
-        if (line.contains('효능') || line.contains('작용') || line.contains('효과')) {
-          currentMedication['description'] = line;
-        } else if (line.contains('복용') ||
-            line.contains('용법') ||
-            line.contains('투여')) {
-          currentMedication['usage'] = line;
-        } else if (line.contains('주의') ||
-            line.contains('부작용') ||
-            line.contains('금기')) {
-          currentMedication['precautions'] = line;
-        } else {
-          // 일반적인 설명
-          if (currentMedication['description']!.isEmpty) {
-            currentMedication['description'] = line;
+        // 각 섹션별로 내용 분류
+        bool sectionFound = false;
+
+        for (String section in sectionKeywords.keys) {
+          for (String keyword in sectionKeywords[section]!) {
+            if (line.startsWith(keyword)) {
+              String content =
+                  line.replaceAll(RegExp('^$keyword\\s*'), '').trim();
+              if (content.isNotEmpty) {
+                currentMedication[section] = content;
+              }
+              sectionFound = true;
+              break;
+            }
+          }
+          if (sectionFound) break;
+        }
+
+        // 섹션 키워드가 없는 경우, 현재 활성 섹션에 추가
+        if (!sectionFound && line.isNotEmpty) {
+          // 마지막으로 업데이트된 섹션에 추가
+          String lastSection = '';
+          if (currentMedication['description']!.isNotEmpty) {
+            lastSection = 'description';
+          } else if (currentMedication['usage']!.isNotEmpty) {
+            lastSection = 'usage';
+          } else if (currentMedication['sideEffects']!.isNotEmpty) {
+            lastSection = 'sideEffects';
+          } else if (currentMedication['precautions']!.isNotEmpty) {
+            lastSection = 'precautions';
           } else {
-            currentMedication['description'] =
-                '${currentMedication['description']}\n$line';
+            lastSection = 'description';
+          }
+
+          if (currentMedication[lastSection]!.isNotEmpty) {
+            currentMedication[lastSection] =
+                '${currentMedication[lastSection]}\n$line';
+          } else {
+            currentMedication[lastSection] = line;
           }
         }
       }
     }
 
-    // 마지막 약 정보 추가
+    // 마지막 약물 정보 추가
     if (currentMedication.isNotEmpty) {
       _parsedMedications.add(Map.from(currentMedication));
     }
@@ -956,8 +1031,19 @@ class _SearchScreenState extends State<SearchScreen> {
         'name': '추천 약물',
         'description': result,
         'usage': '',
+        'sideEffects': '',
         'precautions': '',
       });
+    }
+
+    // 디버그 출력
+    print('📋 파싱된 약물 정보:');
+    for (int i = 0; i < _parsedMedications.length; i++) {
+      print('약물 ${i + 1}: ${_parsedMedications[i]['name']}');
+      print('  효능: ${_parsedMedications[i]['description']}');
+      print('  복용법: ${_parsedMedications[i]['usage']}');
+      print('  부작용: ${_parsedMedications[i]['sideEffects']}');
+      print('  주의사항: ${_parsedMedications[i]['precautions']}');
     }
   }
 
@@ -1066,7 +1152,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   const SizedBox(height: 24),
 
                   // 추천 결과
-                  Container(
+                  SizedBox(
                     width: double.infinity,
                     height: 400,
                     child: Column(
@@ -1245,13 +1331,24 @@ class _SearchScreenState extends State<SearchScreen> {
               const SizedBox(height: 16),
             ],
 
+            // 부작용
+            if (medication['sideEffects']?.isNotEmpty == true) ...[
+              _buildInfoSection(
+                '부작용',
+                Icons.error_outline,
+                medication['sideEffects']!,
+                Colors.red.shade600,
+              ),
+              const SizedBox(height: 16),
+            ],
+
             // 주의사항
             if (medication['precautions']?.isNotEmpty == true) ...[
               _buildInfoSection(
                 '주의사항',
                 Icons.warning,
                 medication['precautions']!,
-                Colors.red.shade700,
+                Colors.amber.shade700,
               ),
             ],
           ],

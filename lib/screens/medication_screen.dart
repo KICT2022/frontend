@@ -900,8 +900,9 @@ class _MedicationScreenState extends State<MedicationScreen> {
                                         childDelegate:
                                             ListWheelChildBuilderDelegate(
                                               builder: (context, index) {
-                                                if (index < 0 || index > 23)
+                                                if (index < 0 || index > 23) {
                                                   return null;
+                                                }
                                                 return Center(
                                                   child: Text(
                                                     index.toString().padLeft(
@@ -960,8 +961,9 @@ class _MedicationScreenState extends State<MedicationScreen> {
                                         childDelegate:
                                             ListWheelChildBuilderDelegate(
                                               builder: (context, index) {
-                                                if (index < 0 || index > 59)
+                                                if (index < 0 || index > 59) {
                                                   return null;
+                                                }
                                                 return Center(
                                                   child: Text(
                                                     index.toString().padLeft(
@@ -1000,7 +1002,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
                           ],
                         ),
                       );
-                    }).toList(),
+                    }),
                     const SizedBox(height: 12),
                     // 빠른 시간 선택 버튼들
                     Wrap(
@@ -1546,7 +1548,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
             Padding(
               padding: const EdgeInsets.only(bottom: 12.0),
               child: Text(
-                '${currentYear}년 ${currentMonth}월',
+                '$currentYear년 $currentMonth월',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,

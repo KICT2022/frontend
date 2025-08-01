@@ -5,8 +5,8 @@ class MedicationProvider extends ChangeNotifier {
   List<Medication> _medications = [];
   List<MedicationSchedule> _schedules = [];
   List<MedicationReminder> _reminders = [];
-  List<MedicationDosage> _todayDosages = [];
-  List<IntegratedMedicationReminder> _integratedReminders = [];
+  final List<MedicationDosage> _todayDosages = [];
+  final List<IntegratedMedicationReminder> _integratedReminders = [];
   final List<String> _selectedSymptoms = [];
   bool _isLoading = false;
 

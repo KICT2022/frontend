@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../utils/notification_service.dart';
 
 class ReminderProvider with ChangeNotifier {
-  List<Map<String, dynamic>> _reminders = [];
+  final List<Map<String, dynamic>> _reminders = [];
   // 복용 완료 상태를 저장하는 맵 (날짜_알림ID_시간대 -> bool)
-  Map<String, bool> _completionStatus = {};
+  final Map<String, bool> _completionStatus = {};
 
   List<Map<String, dynamic>> get reminders => _reminders;
   Map<String, bool> get completionStatus => _completionStatus;
@@ -29,8 +29,8 @@ class ReminderProvider with ChangeNotifier {
     final daysText = _formatDaysText(days);
     final reminderText =
         note.isNotEmpty
-            ? '${medicationName} • ${daysText} • ${time} • ${note}'
-            : '${medicationName} • ${daysText} • ${time}';
+            ? '$medicationName • $daysText • $time • $note'
+            : '$medicationName • $daysText • $time';
 
     _reminders.add({
       'id': newId,
@@ -60,8 +60,8 @@ class ReminderProvider with ChangeNotifier {
     final daysText = _formatDaysText(days);
     final reminderText =
         note.isNotEmpty
-            ? '${medicationName} • ${daysText} • ${timeString} • ${note}'
-            : '${medicationName} • ${daysText} • ${timeString}';
+            ? '$medicationName • $daysText • $timeString • $note'
+            : '$medicationName • $daysText • $timeString';
 
     final index = _reminders.indexWhere((reminder) => reminder['id'] == id);
     if (index != -1) {
@@ -203,7 +203,7 @@ class ReminderProvider with ChangeNotifier {
   ) {
     final daysText = _formatDaysText(days);
     final notificationText =
-        '${medicationName} • ${daysText} • ${time} 복용 알림이 설정되었습니다.';
+        '$medicationName • $daysText • $time 복용 알림이 설정되었습니다.';
 
     NotificationService.showNotification(
       id: DateTime.now().millisecondsSinceEpoch % 100000, // 고유 ID 생성
@@ -226,7 +226,7 @@ class ReminderProvider with ChangeNotifier {
   ) {
     final daysText = _formatDaysText(days);
     final notificationText =
-        '${medicationName} • ${daysText} • ${time} 복용 알림이 수정되었습니다.';
+        '$medicationName • $daysText • $time 복용 알림이 수정되었습니다.';
 
     NotificationService.showNotification(
       id: (DateTime.now().millisecondsSinceEpoch + 1) % 100000, // 고유 ID 생성
@@ -243,7 +243,7 @@ class ReminderProvider with ChangeNotifier {
 
   // 복약 일정 삭제 완료 알림을 표시하는 메서드
   void _showScheduleDeletedNotification(String medicationName) {
-    final notificationText = '${medicationName} 복용 알림이 삭제되었습니다. 알림이 취소되었습니다.';
+    final notificationText = '$medicationName 복용 알림이 삭제되었습니다. 알림이 취소되었습니다.';
 
     NotificationService.showNotification(
       id: (DateTime.now().millisecondsSinceEpoch + 2) % 100000, // 고유 ID 생성

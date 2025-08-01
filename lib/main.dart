@@ -136,8 +136,8 @@ class MyApp extends StatelessWidget {
           useMaterial3: true,
           // 스크롤 성능 개선
           scrollbarTheme: ScrollbarThemeData(
-            thumbColor: MaterialStateProperty.all(Colors.grey.shade400),
-            trackColor: MaterialStateProperty.all(Colors.grey.shade200),
+            thumbColor: WidgetStateProperty.all(Colors.grey.shade400),
+            trackColor: WidgetStateProperty.all(Colors.grey.shade200),
           ),
           appBarTheme: const AppBarTheme(
             backgroundColor: Colors.white,
