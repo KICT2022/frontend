@@ -226,6 +226,7 @@ class _SearchScreenState extends State<SearchScreen> {
     }
     _symptomInputController.dispose();
     _pageController.dispose();
+    _medicationPageController.dispose();
     super.dispose();
   }
 
@@ -782,6 +783,20 @@ class _SearchScreenState extends State<SearchScreen> {
           print('📄 약물 ${i + 1}: ${_parsedMedications[i]['name']}');
         }
 
+        // 페이지 인덱스 초기화
+        setState(() {
+          _currentMedicationPage = 0;
+        });
+
+        // PageController 초기화 (첫 번째 페이지로 이동)
+        if (_parsedMedications.length > 1) {
+          _medicationPageController.animateToPage(
+            0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+
         // 추천 결과 화면으로 이동
         _showRecommendationResult();
       } else {
@@ -1083,6 +1098,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                     controller: _medicationPageController,
                                     itemCount: _parsedMedications.length,
                                     onPageChanged: (index) {
+                                      print('🔄 페이지 변경: $index');
                                       setState(() {
                                         _currentMedicationPage = index;
                                       });
@@ -1102,25 +1118,32 @@ class _SearchScreenState extends State<SearchScreen> {
                         // 페이지 인디케이터 (여러 약이 있을 때만)
                         if (_parsedMedications.length > 1) ...[
                           const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(
-                              _parsedMedications.length,
-                              (index) => Container(
-                                width: 8,
-                                height: 8,
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 4,
+                          Builder(
+                            builder: (context) {
+                              print(
+                                '🎯 현재 페이지: $_currentMedicationPage, 총 페이지: ${_parsedMedications.length}',
+                              );
+                              return Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: List.generate(
+                                  _parsedMedications.length,
+                                  (index) => Container(
+                                    width: 8,
+                                    height: 8,
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color:
+                                          index == _currentMedicationPage
+                                              ? Colors.green.shade700
+                                              : Colors.grey.shade300,
+                                    ),
+                                  ),
                                 ),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color:
-                                      index == _currentMedicationPage
-                                          ? Colors.green.shade700
-                                          : Colors.grey.shade300,
-                                ),
-                              ),
-                            ),
+                              );
+                            },
                           ),
                         ],
                       ],
