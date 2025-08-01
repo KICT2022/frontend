@@ -20,6 +20,7 @@ import 'screens/profile_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/notification_screen.dart';
 import 'screens/medication_search_result_screen.dart';
+import 'screens/drug_interaction_result_screen.dart';
 import 'screens/profile_edit_screen.dart';
 
 import 'utils/notification_service.dart';
@@ -232,6 +233,16 @@ class MyApp extends StatelessWidget {
           builder: (context, state) {
             final searchQuery = state.extra as String;
             return MedicationSearchResultScreen(searchQuery: searchQuery);
+          },
+        ),
+        GoRoute(
+          path: '/drug-interaction-result',
+          builder: (context, state) {
+            final data = state.extra as Map<String, dynamic>;
+            return DrugInteractionResultScreen(
+              drugNames: data['drugNames'] as List<String>,
+              interactionResult: data['result'] as Map<String, dynamic>,
+            );
           },
         ),
         GoRoute(
