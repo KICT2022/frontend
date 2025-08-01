@@ -1932,7 +1932,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   // 약물 상호작용 확인 메서드
-  void _checkDrugInteractions() {
+  Future<void> _checkDrugInteractions() async {
     // 입력된 약물 이름들 수집
     final List<String> drugNames = [];
     for (int i = 0; i < _drugControllers.length && i < _drugInputCount; i++) {
@@ -1950,6 +1950,10 @@ class _SearchScreenState extends State<SearchScreen> {
       return;
     }
 
+    setState(() {
+      _validationMessage = null;
+    });
+
     // 로딩 다이얼로그 표시
     showDialog(
       context: context,
@@ -1961,22 +1965,51 @@ class _SearchScreenState extends State<SearchScreen> {
       },
     );
 
-    // 실제 API 호출 대신 임시 결과 생성 (나중에 실제 API로 교체)
-    Future.delayed(const Duration(seconds: 2), () {
+    try {
+      print('🔍 약물 상호작용 확인 요청: $drugNames');
+
+      // 실제 API 호출
+      final result = await _apiManager.checkDrugInteractions(drugNames);
+
       Navigator.of(context).pop(); // 로딩 다이얼로그 닫기
 
-      // 임시 상호작용 결과 데이터
-      final interactionResult = _generateMockInteractionResult(drugNames);
+      print('📡 약물 상호작용 결과: success=${result.success}, error=${result.error}');
 
-      // 결과 화면으로 이동
-      context.push(
-        '/drug-interaction-result',
-        extra: {'drugNames': drugNames, 'result': interactionResult},
+      if (result.success) {
+        // 결과 화면으로 이동
+        context.push(
+          '/drug-interaction-result',
+          extra: {
+            'drugNames': drugNames,
+            'result': result.result ?? '',
+            'data': result.data,
+          },
+        );
+      } else {
+        // 오류 처리
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('약물 상호작용 확인에 실패했습니다: ${result.error ?? '알 수 없는 오류'}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      Navigator.of(context).pop(); // 로딩 다이얼로그 닫기
+      print('❌ 약물 상호작용 확인 중 오류: $e');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('약물 상호작용 확인 중 오류가 발생했습니다: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
       );
-    });
+    }
   }
 
-  // 임시 상호작용 결과 생성 (실제 API 연동 시 제거)
+  /*// 임시 상호작용 결과 생성 (실제 API 연동 시 제거)
   Map<String, dynamic> _generateMockInteractionResult(List<String> drugNames) {
     // 약물 조합에 따른 임시 결과 생성
     final hasAspirin = drugNames.any(
@@ -2043,5 +2076,5 @@ class _SearchScreenState extends State<SearchScreen> {
         ],
       };
     }
-  }
+  }*/
 }

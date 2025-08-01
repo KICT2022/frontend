@@ -9,6 +9,7 @@ class ApiConfig {
   static const String userEndpoint = '/api/v1/users';
   static const String chatEndpoint = '/chat';
   static const String drugInfoEndpoint = '/chat/drug-info';
+  static const String drugInteractionEndpoint = '/api/drugs/check';
 
   // 완전한 API URL들
   static String get loginUrl => '$baseUrl$userEndpoint/login';
@@ -19,6 +20,7 @@ class ApiConfig {
 
   static String get chatUrl => '$baseUrl$chatEndpoint';
   static String get drugInfoUrl => '$baseUrl$drugInfoEndpoint';
+  static String get drugInteractionUrl => '$baseUrl$drugInteractionEndpoint';
 
   // 요청 타임아웃 설정
   static const Duration connectTimeout = Duration(seconds: 30);

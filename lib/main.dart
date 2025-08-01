@@ -241,7 +241,8 @@ class MyApp extends StatelessWidget {
             final data = state.extra as Map<String, dynamic>;
             return DrugInteractionResultScreen(
               drugNames: data['drugNames'] as List<String>,
-              interactionResult: data['result'] as Map<String, dynamic>,
+              result: data['result'] as String,
+              data: data['data'] as Map<String, dynamic>?,
             );
           },
         ),

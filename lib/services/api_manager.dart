@@ -145,4 +145,7 @@ extension ApiManagerExtensions on ApiManager {
   Future<ChatHistoryResult> getChatHistory() => chatService.getChatHistory();
 
   Future<ChatResult> clearChat() => chatService.clearChat();
+
+  Future<DrugInteractionResult> checkDrugInteractions(List<String> drugNames) =>
+      chatService.checkDrugInteractions(drugNames);
 }

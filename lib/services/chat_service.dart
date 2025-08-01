@@ -140,6 +140,67 @@ class ChatService {
       return ChatResult(success: false, error: '대화 초기화 중 오류가 발생했습니다: $e');
     }
   }
+
+  // 약물 상호작용 확인
+  Future<DrugInteractionResult> checkDrugInteractions(
+    List<String> drugNames,
+  ) async {
+    try {
+      print('🔍 약물 상호작용 확인 요청: $drugNames');
+
+      final response = await _apiService.post(
+        ApiConfig.drugInteractionUrl,
+        data: {'drugs': drugNames},
+      );
+
+      print(
+        '📡 약물 상호작용 응답: success=${response.success}, data=${response.data}',
+      );
+      print('📄 응답 데이터 타입: ${response.data.runtimeType}');
+
+      if (response.success && response.data != null) {
+        // String 형태의 응답 처리
+        if (response.data is String) {
+          final result = response.data as String;
+          print('✅ String 응답으로 약물 상호작용 확인 성공: $result');
+          return DrugInteractionResult(success: true, result: result);
+        }
+
+        // Map 형태의 응답 처리
+        if (response.data is Map<String, dynamic>) {
+          final data = response.data as Map<String, dynamic>;
+          final result =
+              data['result'] ??
+              data['reply'] ??
+              data['message'] ??
+              data['response'] ??
+              '';
+
+          print('✅ Map 응답으로 약물 상호작용 확인 성공: $result');
+          return DrugInteractionResult(
+            success: true,
+            result: result,
+            data: data,
+          );
+        }
+
+        // 기타 형태의 응답
+        print('❓ 알 수 없는 응답 형태: ${response.data.runtimeType}');
+        return DrugInteractionResult(success: false, error: '알 수 없는 응답 형태입니다.');
+      }
+
+      return DrugInteractionResult(
+        success: false,
+        error: '약물 상호작용 확인에 실패했습니다.',
+      );
+    } catch (e) {
+      print('❌ 약물 상호작용 확인 중 오류: $e');
+      return DrugInteractionResult(
+        success: false,
+        error: '약물 상호작용 확인 중 오류가 발생했습니다: $e',
+      );
+    }
+  }
 }
 
 // 채팅 결과 클래스
@@ -215,4 +276,19 @@ class ChatMessage {
       'isUser': isUser,
     };
   }
+}
+
+// 약물 상호작용 결과 클래스
+class DrugInteractionResult {
+  final bool success;
+  final String? result;
+  final String? error;
+  final Map<String, dynamic>? data;
+
+  DrugInteractionResult({
+    required this.success,
+    this.result,
+    this.error,
+    this.data,
+  });
 }

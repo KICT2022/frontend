@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 
 class DrugInteractionResultScreen extends StatelessWidget {
   final List<String> drugNames;
-  final Map<String, dynamic> interactionResult;
+  final String result;
+  final Map<String, dynamic>? data;
 
   const DrugInteractionResultScreen({
     super.key,
     required this.drugNames,
-    required this.interactionResult,
+    required this.result,
+    this.data,
   });
 
   @override
@@ -39,18 +41,18 @@ class DrugInteractionResultScreen extends StatelessWidget {
             _buildDrugListCard(),
             const SizedBox(height: 20),
 
-            // 상호작용 결과 요약
-            _buildSummaryCard(),
+            // 서버 응답 결과
+            _buildServerResponseCard(),
             const SizedBox(height: 20),
 
-            // 상세 상호작용 정보
-            if (interactionResult['interactions'] != null) ...[
+            // 상세 상호작용 정보 (데이터가 있는 경우)
+            if (data != null && data!['interactions'] != null) ...[
               _buildDetailedInteractionsCard(),
               const SizedBox(height: 20),
             ],
 
-            // 권장사항
-            if (interactionResult['recommendations'] != null) ...[
+            // 권장사항 (데이터가 있는 경우)
+            if (data != null && data!['recommendations'] != null) ...[
               _buildRecommendationsCard(),
               const SizedBox(height: 20),
             ],
@@ -137,9 +139,9 @@ class DrugInteractionResultScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryCard() {
-    final severity = interactionResult['severity'] ?? 'unknown';
-    final isSafe = interactionResult['isSafe'] ?? false;
+  /*Widget _buildSummaryCard() {
+    final severity = data?['severity'] ?? 'unknown';
+    final isSafe = data?['isSafe'] ?? false;
 
     Color cardColor;
     IconData statusIcon;
@@ -232,12 +234,12 @@ class DrugInteractionResultScreen extends StatelessWidget {
         ),
       ),
     );
-  }
+  }*/
 
   Widget _buildDetailedInteractionsCard() {
-    final interactions = interactionResult['interactions'] as List<dynamic>?;
+    final interactions = data?['interactions'] as List<dynamic>? ?? [];
 
-    if (interactions == null || interactions.isEmpty) {
+    if (interactions.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -349,10 +351,9 @@ class DrugInteractionResultScreen extends StatelessWidget {
   }
 
   Widget _buildRecommendationsCard() {
-    final recommendations =
-        interactionResult['recommendations'] as List<dynamic>?;
+    final recommendations = data?['recommendations'] as List<dynamic>? ?? [];
 
-    if (recommendations == null || recommendations.isEmpty) {
+    if (recommendations.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -447,6 +448,57 @@ class DrugInteractionResultScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildServerResponseCard() {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 4,
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.check_circle_outline,
+                  size: 24,
+                  color: const Color(0xFF174D4D),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  '상호작용 분석 결과',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF174D4D),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Text(
+                result.isNotEmpty ? result : '서버 응답이 없습니다.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade800,
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
