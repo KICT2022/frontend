@@ -4,8 +4,7 @@ import '../providers/medication_provider.dart';
 import '../providers/notification_provider.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/bottom_navigation.dart';
-import 'medication_detail_screen.dart';
-import '../models/symptom.dart';
+
 import '../services/api_manager.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -17,7 +16,7 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   bool _isSymptomInput = true;
-  final List<String> _selectedSymptoms = [];
+
   String? _selectedCategoryId;
 
   // 약물 입력 칸 개수를 관리하는 변수 추가
@@ -31,8 +30,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   // 약 추천 관련 상태 변수
   bool _isLoadingRecommendation = false;
-  String? _recommendationResult;
-  String? _recommendationError;
+
   final List<Map<String, String>> _parsedMedications = [];
   final PageController _medicationPageController = PageController();
   int _currentMedicationPage = 0;
@@ -193,25 +191,6 @@ class _SearchScreenState extends State<SearchScreen> {
   late PageController _pageController;
   int _currentPage = 0;
 
-  // 약물 데이터 (예시)
-  final List<Map<String, dynamic>> _medications = [
-    {
-      'name': '타이레놀',
-      'dosage': ['15세 이하 : 1알', '15세 이상 : 2알', '1일 2회'],
-      'additionalInfo': '식후 30분에 복용하시고, 알코올과 함께 복용하지 마세요.',
-    },
-    {
-      'name': '아스피린',
-      'dosage': ['성인 : 1-2알', '1일 3-4회', '식후 복용'],
-      'additionalInfo': '위장장애가 있을 수 있으니 주의하세요.',
-    },
-    {
-      'name': '이부프로펜',
-      'dosage': ['성인 : 1-2알', '1일 3-4회', '식사와 함께 복용'],
-      'additionalInfo': '위장장애가 있을 수 있으니 주의하세요.',
-    },
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -290,43 +269,6 @@ class _SearchScreenState extends State<SearchScreen> {
       );
       medicationProvider.addSymptom(symptom);
       _symptomInputController.clear();
-    }
-  }
-
-  void _addSymptom(String symptomId) {
-    setState(() {
-      if (!_selectedSymptoms.contains(symptomId)) {
-        _selectedSymptoms.add(symptomId);
-      }
-    });
-  }
-
-  void _removeSymptom(String symptomId) {
-    setState(() {
-      _selectedSymptoms.remove(symptomId);
-    });
-  }
-
-  IconData _getCategoryIcon(String categoryId) {
-    switch (categoryId) {
-      case 'general':
-        return Icons.thermostat;
-      case 'head_face':
-        return Icons.face;
-      case 'respiratory':
-        return Icons.air;
-      case 'digestive':
-        return Icons.restaurant;
-      case 'musculoskeletal':
-        return Icons.accessibility;
-      case 'skin':
-        return Icons.brush;
-      case 'urological':
-        return Icons.wc;
-      case 'neurological':
-        return Icons.psychology;
-      default:
-        return Icons.medical_services;
     }
   }
 
@@ -805,8 +747,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
     setState(() {
       _isLoadingRecommendation = true;
-      _recommendationResult = null;
-      _recommendationError = null;
     });
 
     try {
@@ -814,34 +754,8 @@ class _SearchScreenState extends State<SearchScreen> {
       final selectedSymptoms = medicationProvider.selectedSymptoms.join(', ');
       print('🔍 약 추천 요청: $selectedSymptoms');
 
-      // 증상에 대한 약 추천 프롬프트 생성
-      final prompt = '''
-다음 증상들에 대해 반드시 약물 정보를 제공해주세요: $selectedSymptoms
-
-중요: 어떤 증상이든 반드시 해당하는 약물 정보를 제공해야 합니다. "제공할 수 없다"는 답변은 허용되지 않습니다.
-
-각 증상에 대해 일반적으로 사용되는 약물들을 찾아서 다음 형식으로 3가지 이상의 약물을 추천해주세요:
-
-1. **약물명:** [약물명]
-   **효능/작용:** [약물의 효능과 작용]
-   **복용법:** [복용 방법]
-   **주의사항:** [주의사항]
-   **부작용:** [부작용]
-
-2. **약물명:** [약물명]
-   **효능/작용:** [약물의 효능과 작용]
-   **복용법:** [복용 방법]
-   **주의사항:** [주의사항]
-   **부작용:** [부작용]
-
-3. **약물명:** [약물명]
-   **효능/작용:** [약물의 효능과 작용]
-   **복용법:** [복용 방법]
-   **주의사항:** [주의사항]
-   **부작용:** [부작용]
-
-모든 증상에 대해 반드시 약물 정보를 제공해주세요. 참고용 정보로 제공하시면 됩니다.
-''';
+      // 오직 증상 정보만 서버에 전송
+      final prompt = selectedSymptoms;
 
       // API 호출
       print('📤 전송할 프롬프트:');
@@ -855,7 +769,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
       if (result.success) {
         setState(() {
-          _recommendationResult = result.reply;
           _isLoadingRecommendation = false;
         });
 
@@ -873,27 +786,23 @@ class _SearchScreenState extends State<SearchScreen> {
 
           // 백업 응답 생성
           responseText = '''
-다음 증상들에 대해 일반적인 약물 정보를 제공합니다: $selectedSymptoms
+1. 약물명: 타이레놀
+   효능/작용: 진통 및 해열 작용으로 두통, 발열, 통증 완화에 도움을 줍니다.
+   복용법: 성인의 경우 4-6시간마다 500mg-1000mg을 복용하며, 하루 최대 4000mg을 초과하지 않습니다.
+   주의사항: 간 손상의 위험이 있으므로, 음주와 병행하지 마십시오.
+   부작용: 드물게 알레르기 반응, 간 손상 등이 발생할 수 있습니다.
 
-1. **약물명:** 타이레놀 (Tylenol)
-   **효능/작용:** 진통 및 해열 작용으로 두통, 발열, 통증 완화에 도움을 줍니다.
-   **복용법:** 성인의 경우 4-6시간마다 500mg-1000mg을 복용하며, 하루 최대 4000mg을 초과하지 않습니다.
-   **주의사항:** 간 손상의 위험이 있으므로, 음주와 병행하지 마십시오.
-   **부작용:** 드물게 알레르기 반응, 간 손상 등이 발생할 수 있습니다.
+2. 약물명: 이부프로펜
+   효능/작용: 항염증, 진통, 해열 작용으로 통증과 염증 완화에 도움을 줍니다.
+   복용법: 성인의 경우 4-6시간마다 200mg-400mg을 복용하며, 하루 최대 1200mg을 초과하지 않습니다.
+   주의사항: 위장 장애가 있을 수 있으므로 식사와 함께 복용하세요.
+   부작용: 위장 장애, 두통, 어지럼증 등이 발생할 수 있습니다.
 
-2. **약물명:** 이부프로펜 (Ibuprofen)
-   **효능/작용:** 항염증, 진통, 해열 작용으로 통증과 염증 완화에 도움을 줍니다.
-   **복용법:** 성인의 경우 4-6시간마다 200mg-400mg을 복용하며, 하루 최대 1200mg을 초과하지 않습니다.
-   **주의사항:** 위장 장애가 있을 수 있으므로 식사와 함께 복용하세요.
-   **부작용:** 위장 장애, 두통, 어지럼증 등이 발생할 수 있습니다.
-
-3. **약물명:** 아세트아미노펜 (Acetaminophen)
-   **효능/작용:** 진통 및 해열 작용으로 통증과 발열 완화에 도움을 줍니다.
-   **복용법:** 성인의 경우 4-6시간마다 500mg-1000mg을 복용하며, 하루 최대 4000mg을 초과하지 않습니다.
-   **주의사항:** 과다 복용 시 간 손상이 발생할 수 있습니다.
-   **부작용:** 드물게 알레르기 반응, 간 손상 등이 발생할 수 있습니다.
-
-참고: 모든 약물은 의료진과 상담 후 복용하시기 바랍니다.
+3. 약물명: 아세트아미노펜
+   효능/작용: 진통 및 해열 작용으로 통증과 발열 완화에 도움을 줍니다.
+   복용법: 성인의 경우 4-6시간마다 500mg-1000mg을 복용하며, 하루 최대 4000mg을 초과하지 않습니다.
+   주의사항: 과다 복용 시 간 손상이 발생할 수 있습니다.
+   부작용: 드물게 알레르기 반응, 간 손상 등이 발생할 수 있습니다.
 ''';
         }
 
@@ -918,7 +827,6 @@ class _SearchScreenState extends State<SearchScreen> {
         _showRecommendationResult();
       } else {
         setState(() {
-          _recommendationError = result.error ?? '약 추천에 실패했습니다.';
           _isLoadingRecommendation = false;
         });
 
@@ -933,7 +841,6 @@ class _SearchScreenState extends State<SearchScreen> {
     } catch (e) {
       print('❌ 약 추천 중 오류: $e');
       setState(() {
-        _recommendationError = '약 추천 중 오류가 발생했습니다: $e';
         _isLoadingRecommendation = false;
       });
 
@@ -979,9 +886,23 @@ class _SearchScreenState extends State<SearchScreen> {
       _parsedMedications.clear();
       print('🔍 파싱 시작: ${result.length}자');
 
+      // 서버 응답에서 불필요한 텍스트 제거
+      String cleanResult = result;
+
+      // 영어로 된 안내 문구 제거
+      cleanResult = cleanResult.replaceAll(
+        RegExp(r"I'm glad to provide information.*?always advised\."),
+        '',
+      );
+      cleanResult = cleanResult.replaceAll(
+        RegExp(r"Please remember that.*?healthcare provider\."),
+        '',
+      );
+
       // 결과 텍스트를 줄바꿈으로 분리
-      List<String> lines = result.split('\n');
+      List<String> lines = cleanResult.split('\n');
       Map<String, String> currentMedication = {};
+      String currentSection = '';
 
       for (String line in lines) {
         line = line.trim();
@@ -989,7 +910,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
         print('📝 처리 중인 라인: $line');
 
-        // 새로운 약물 시작 패턴 확인 (숫자. 로 시작)
+        // 새로운 약물 시작 패턴 확인 (숫자. 로 시작하거나 약물명: 으로 시작)
         if (RegExp(r'^\d+\.\s*').hasMatch(line)) {
           // 이전 약물 정보가 있으면 저장
           if (currentMedication.isNotEmpty) {
@@ -1000,6 +921,12 @@ class _SearchScreenState extends State<SearchScreen> {
           // 새로운 약물 시작
           String medicationName =
               line.replaceAll(RegExp(r'^\d+\.\s*'), '').trim();
+
+          // 약물명: 이 포함되어 있으면 제거
+          if (medicationName.startsWith('약물명:')) {
+            medicationName = medicationName.substring('약물명:'.length).trim();
+          }
+
           print('🆕 새 약물 시작: $medicationName');
 
           currentMedication = {
@@ -1009,60 +936,56 @@ class _SearchScreenState extends State<SearchScreen> {
             'sideEffects': '',
             'precautions': '',
           };
+          currentSection = 'name';
+        } else if (line.startsWith('약물명:')) {
+          // 이전 약물 정보가 있으면 저장
+          if (currentMedication.isNotEmpty) {
+            _parsedMedications.add(Map.from(currentMedication));
+            print('💾 약물 저장: ${currentMedication['name']}');
+          }
+
+          String medicationName = line.substring('약물명:'.length).trim();
+          print('🆕 새 약물 시작 (약물명으로): $medicationName');
+
+          currentMedication = {
+            'name': medicationName,
+            'description': '',
+            'usage': '',
+            'sideEffects': '',
+            'precautions': '',
+          };
+          currentSection = 'name';
         } else if (currentMedication.isNotEmpty) {
           // 각 섹션별로 내용 분류
-          if (line.startsWith('**약물명:')) {
-            String content = line.substring('**약물명:'.length).trim();
-            if (content.isNotEmpty) {
-              currentMedication['name'] = content;
-              print('📝 약물명 설정: $content');
-            }
-          } else if (line.startsWith('**효능/작용:')) {
-            String content = line.substring('**효능/작용:'.length).trim();
-            if (content.isNotEmpty) {
-              currentMedication['description'] = content;
-              print('📝 효능 설정: $content');
-            }
-          } else if (line.startsWith('**복용법:')) {
-            String content = line.substring('**복용법:'.length).trim();
-            if (content.isNotEmpty) {
-              currentMedication['usage'] = content;
-              print('📝 복용법 설정: $content');
-            }
-          } else if (line.startsWith('**주의사항:')) {
-            String content = line.substring('**주의사항:'.length).trim();
-            if (content.isNotEmpty) {
-              currentMedication['precautions'] = content;
-              print('📝 주의사항 설정: $content');
-            }
-          } else if (line.startsWith('**부작용:')) {
-            String content = line.substring('**부작용:'.length).trim();
-            if (content.isNotEmpty) {
-              currentMedication['sideEffects'] = content;
-              print('📝 부작용 설정: $content');
-            }
-          } else if (line.isNotEmpty) {
-            // 섹션 키워드가 없는 경우, 마지막 섹션에 추가
-            String lastSection = '';
-            if (currentMedication['description']!.isNotEmpty) {
-              lastSection = 'description';
-            } else if (currentMedication['usage']!.isNotEmpty) {
-              lastSection = 'usage';
-            } else if (currentMedication['precautions']!.isNotEmpty) {
-              lastSection = 'precautions';
-            } else if (currentMedication['sideEffects']!.isNotEmpty) {
-              lastSection = 'sideEffects';
+          if (line.startsWith('효능/작용:')) {
+            String content = line.substring('효능/작용:'.length).trim();
+            currentMedication['description'] = content;
+            currentSection = 'description';
+            print('📝 효능 설정: $content');
+          } else if (line.startsWith('복용법:')) {
+            String content = line.substring('복용법:'.length).trim();
+            currentMedication['usage'] = content;
+            currentSection = 'usage';
+            print('📝 복용법 설정: $content');
+          } else if (line.startsWith('주의사항:')) {
+            String content = line.substring('주의사항:'.length).trim();
+            currentMedication['precautions'] = content;
+            currentSection = 'precautions';
+            print('📝 주의사항 설정: $content');
+          } else if (line.startsWith('부작용:')) {
+            String content = line.substring('부작용:'.length).trim();
+            currentMedication['sideEffects'] = content;
+            currentSection = 'sideEffects';
+            print('📝 부작용 설정: $content');
+          } else if (line.isNotEmpty && currentSection.isNotEmpty) {
+            // 섹션 키워드가 없는 경우, 현재 섹션에 추가
+            if (currentMedication[currentSection]!.isNotEmpty) {
+              currentMedication[currentSection] =
+                  '${currentMedication[currentSection]} $line';
             } else {
-              lastSection = 'description';
+              currentMedication[currentSection] = line;
             }
-
-            if (currentMedication[lastSection]!.isNotEmpty) {
-              currentMedication[lastSection] =
-                  '${currentMedication[lastSection]}\n$line';
-            } else {
-              currentMedication[lastSection] = line;
-            }
-            print('📝 $lastSection에 추가: $line');
+            print('📝 $currentSection에 추가: $line');
           }
         }
       }
@@ -1073,15 +996,40 @@ class _SearchScreenState extends State<SearchScreen> {
         print('💾 마지막 약물 저장: ${currentMedication['name']}');
       }
 
-      // 파싱된 약이 없으면 기본 약물 정보 생성
+      // 파싱된 약이 없으면 서버 응답을 그대로 하나의 약물로 처리
       if (_parsedMedications.isEmpty) {
+        print('⚠️ 파싱된 약물이 없습니다. 서버 응답 전체를 하나의 약물로 처리합니다.');
         _parsedMedications.add({
-          'name': '추천 약물 1',
-          'description': 'API 응답을 파싱할 수 없습니다. 다시 시도해주세요.',
-          'usage': '의료진과 상담 후 복용하세요.',
-          'sideEffects': '개인차이가 있을 수 있습니다.',
-          'precautions': '의료진과 상담 후 사용하세요.',
+          'name': '서버 추천 약물',
+          'description':
+              result.length > 200 ? result.substring(0, 200) + '...' : result,
+          'usage': '의사와 상담 후 복용하세요.',
+          'sideEffects': '개인차가 있을 수 있습니다.',
+          'precautions': '복용 전 의료진과 상담하세요.',
         });
+      }
+
+      // 약물명이 비어있거나 너무 짧은 경우 보정
+      for (int i = 0; i < _parsedMedications.length; i++) {
+        if (_parsedMedications[i]['name']!.isEmpty ||
+            _parsedMedications[i]['name']!.length < 2) {
+          _parsedMedications[i]['name'] = '약물 ${i + 1}';
+          print('📝 약물명 보정: 약물 ${i + 1}');
+        }
+
+        // 빈 필드들을 기본값으로 채우기
+        if (_parsedMedications[i]['description']!.isEmpty) {
+          _parsedMedications[i]['description'] = '효능 정보를 확인할 수 없습니다.';
+        }
+        if (_parsedMedications[i]['usage']!.isEmpty) {
+          _parsedMedications[i]['usage'] = '의사와 상담 후 복용하세요.';
+        }
+        if (_parsedMedications[i]['sideEffects']!.isEmpty) {
+          _parsedMedications[i]['sideEffects'] = '개인차가 있을 수 있습니다.';
+        }
+        if (_parsedMedications[i]['precautions']!.isEmpty) {
+          _parsedMedications[i]['precautions'] = '복용 전 의료진과 상담하세요.';
+        }
       }
 
       // 디버그 출력
@@ -1095,14 +1043,15 @@ class _SearchScreenState extends State<SearchScreen> {
       }
     } catch (e) {
       print('❌ 파싱 중 오류: $e');
-      // 파싱 실패 시 기본 약물 정보 생성
+      // 오류 발생 시 서버 응답을 그대로 하나의 약물로 처리
       _parsedMedications.clear();
       _parsedMedications.add({
-        'name': '추천 약물 1',
-        'description': '파싱 오류가 발생했습니다: $e',
-        'usage': '의료진과 상담 후 복용하세요.',
-        'sideEffects': '개인차이가 있을 수 있습니다.',
-        'precautions': '의료진과 상담 후 사용하세요.',
+        'name': '서버 응답',
+        'description':
+            result.length > 200 ? result.substring(0, 200) + '...' : result,
+        'usage': '의사와 상담 후 복용하세요.',
+        'sideEffects': '개인차가 있을 수 있습니다.',
+        'precautions': '복용 전 의료진과 상담하세요.',
       });
     }
   }
@@ -1463,43 +1412,6 @@ class _SearchScreenState extends State<SearchScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  // 정보 섹션 위젯
-  Widget _buildInfoSection(
-    String title,
-    IconData icon,
-    String content,
-    Color color,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          content,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey.shade800,
-            height: 1.4,
-          ),
-        ),
-      ],
     );
   }
 
