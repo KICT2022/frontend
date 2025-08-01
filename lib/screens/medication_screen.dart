@@ -1515,106 +1515,114 @@ class _MedicationScreenState extends State<MedicationScreen> {
   }
 
   Widget _buildMonthlyAchievementGrid() {
-    // 현재 월의 날짜 정보 계산
-    final now = DateTime.now();
-    final currentYear = now.year;
-    final currentMonth = now.month;
-    final currentDay = now.day;
+    return Consumer<ReminderProvider>(
+      builder: (context, reminderProvider, child) {
+        // 현재 월의 날짜 정보 계산
+        final now = DateTime.now();
+        final currentYear = now.year;
+        final currentMonth = now.month;
+        final currentDay = now.day;
 
-    // 현재 월의 첫 번째 날짜와 마지막 날짜
-    final firstDayOfMonth = DateTime(currentYear, currentMonth, 1);
-    final lastDayOfMonth = DateTime(currentYear, currentMonth + 1, 0);
+        // 현재 월의 첫 번째 날짜와 마지막 날짜
+        final firstDayOfMonth = DateTime(currentYear, currentMonth, 1);
+        final lastDayOfMonth = DateTime(currentYear, currentMonth + 1, 0);
 
-    // 첫 번째 날짜의 요일 (0: 일요일, 1: 월요일, ..., 6: 토요일)
-    final firstDayWeekday = firstDayOfMonth.weekday % 7; // 일요일을 0으로 변환
-    final daysInMonth = lastDayOfMonth.day;
+        // 첫 번째 날짜의 요일 (0: 일요일, 1: 월요일, ..., 6: 토요일)
+        final firstDayWeekday = firstDayOfMonth.weekday % 7; // 일요일을 0으로 변환
+        final daysInMonth = lastDayOfMonth.day;
 
-    // 샘플 데이터 (실제로는 데이터베이스에서 가져와야 함)
-    List<int> dailyPercentages = List.generate(daysInMonth, (index) {
-      // 랜덤한 달성률 생성 (실제 구현에서는 실제 데이터 사용)
-      return 60 + (index * 2) % 40; // 60-99% 범위
-    });
+        // 실제 복용 달성률 데이터 가져오기
+        final monthlyRates = reminderProvider.getMonthlyCompletionRates(
+          currentYear,
+          currentMonth,
+        );
 
-    // 전체 주 수 계산 (첫 주의 빈 칸 + 날짜 수)
-    final totalWeeks = ((firstDayWeekday + daysInMonth) / 7).ceil();
+        // 전체 주 수 계산 (첫 주의 빈 칸 + 날짜 수)
+        final totalWeeks = ((firstDayWeekday + daysInMonth) / 7).ceil();
 
-    return Column(
-      children: [
-        // 월 표시
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12.0),
-          child: Text(
-            '${currentYear}년 ${currentMonth}월',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF174D4D),
+        return Column(
+          children: [
+            // 월 표시
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: Text(
+                '${currentYear}년 ${currentMonth}월',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF174D4D),
+                ),
+              ),
             ),
-          ),
-        ),
-        // 요일 헤더
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children:
-              ['일', '월', '화', '수', '목', '금', '토'].map((day) {
-                return SizedBox(
-                  width: 35.0,
-                  child: Text(
-                    day,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF174D4D),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                );
-              }).toList(),
-        ),
-        const SizedBox(height: 8),
-        // 날짜 그리드
-        ...List.generate(totalWeeks, (weekIndex) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: Row(
+            // 요일 헤더
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(7, (dayIndex) {
-                final gridIndex = weekIndex * 7 + dayIndex;
-
-                // 첫 주의 빈 칸들
-                if (gridIndex < firstDayWeekday) {
-                  return const SizedBox(width: 35.0, height: 35.0);
-                }
-
-                // 월의 날짜 범위를 벗어나는 경우
-                final dayNumber = gridIndex - firstDayWeekday + 1;
-                if (dayNumber > daysInMonth) {
-                  return const SizedBox(width: 35.0, height: 35.0);
-                }
-
-                final percentage = dailyPercentages[dayNumber - 1];
-                final isToday = dayNumber == currentDay;
-
-                return _buildDailyAchievementItem(
-                  dayNumber,
-                  percentage,
-                  isToday,
-                );
-              }),
+              children:
+                  ['일', '월', '화', '수', '목', '금', '토'].map((day) {
+                    return SizedBox(
+                      width: 35.0,
+                      child: Text(
+                        day,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF174D4D),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    );
+                  }).toList(),
             ),
-          );
-        }),
-      ],
+            const SizedBox(height: 8),
+            // 날짜 그리드
+            ...List.generate(totalWeeks, (weekIndex) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: List.generate(7, (dayIndex) {
+                    final gridIndex = weekIndex * 7 + dayIndex;
+
+                    // 첫 주의 빈 칸들
+                    if (gridIndex < firstDayWeekday) {
+                      return const SizedBox(width: 35.0, height: 35.0);
+                    }
+
+                    // 월의 날짜 범위를 벗어나는 경우
+                    final dayNumber = gridIndex - firstDayWeekday + 1;
+                    if (dayNumber > daysInMonth) {
+                      return const SizedBox(width: 35.0, height: 35.0);
+                    }
+
+                    // 실제 달성률 데이터 사용
+                    final completionRate = monthlyRates[dayNumber] ?? 0.0;
+                    final isToday = dayNumber == currentDay;
+                    final isFutureDate = completionRate == -1;
+
+                    return _buildDailyAchievementItem(
+                      dayNumber,
+                      completionRate,
+                      isToday,
+                      isFutureDate,
+                    );
+                  }),
+                ),
+              );
+            }),
+          ],
+        );
+      },
     );
   }
 
   Widget _buildDailyAchievementItem(
     int day,
-    int percentage, [
+    double completionRate, [
     bool isToday = false,
+    bool isFutureDate = false,
   ]) {
-    // 80% 이상이면 완료로 간주
-    bool isCompleted = percentage >= 80;
+    // 80% 이상이면 완료로 간주, 미래 날짜는 미완료로 처리
+    bool isCompleted = !isFutureDate && completionRate >= 80;
 
     return GestureDetector(
       onTap: () {
@@ -1625,19 +1633,14 @@ class _MedicationScreenState extends State<MedicationScreen> {
         height: 35.0,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color:
-              isToday
-                  ? Colors.blue.shade300
-                  : (isCompleted
-                      ? Colors.green.shade400
-                      : Colors.grey.shade200),
+          color: _getDayBackgroundColor(
+            isToday,
+            isCompleted,
+            isFutureDate,
+            completionRate,
+          ),
           border: Border.all(
-            color:
-                isToday
-                    ? Colors.blue.shade600
-                    : (isCompleted
-                        ? Colors.green.shade600
-                        : Colors.grey.shade400),
+            color: _getDayBorderColor(isToday, isCompleted, isFutureDate),
             width: isToday ? 2.0 : 1.5,
           ),
           boxShadow:
@@ -1657,9 +1660,31 @@ class _MedicationScreenState extends State<MedicationScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (isCompleted) ...[
+            if (isFutureDate) ...[
+              // 미래 날짜는 날짜만 표시
+              Text(
+                '$day',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade400,
+                ),
+              ),
+            ] else if (isCompleted) ...[
+              // 완료된 날짜는 체크 아이콘
               Icon(Icons.check_circle, size: 16.0, color: Colors.white),
+            ] else if (completionRate > 0) ...[
+              // 부분 완료된 날짜는 퍼센트 표시
+              Text(
+                '${completionRate.round()}%',
+                style: TextStyle(
+                  fontSize: 8,
+                  fontWeight: FontWeight.w600,
+                  color: isToday ? Colors.white : Colors.grey.shade700,
+                ),
+              ),
             ] else ...[
+              // 미완료 날짜는 날짜만 표시
               Text(
                 '$day',
                 style: TextStyle(
@@ -1673,5 +1698,40 @@ class _MedicationScreenState extends State<MedicationScreen> {
         ),
       ),
     );
+  }
+
+  // 날짜별 배경색을 결정하는 헬퍼 메서드
+  Color _getDayBackgroundColor(
+    bool isToday,
+    bool isCompleted,
+    bool isFutureDate,
+    double completionRate,
+  ) {
+    if (isToday) {
+      return Colors.blue.shade300;
+    } else if (isFutureDate) {
+      return Colors.grey.shade100;
+    } else if (isCompleted) {
+      return Colors.green.shade400;
+    } else if (completionRate > 50) {
+      return Colors.orange.shade300;
+    } else if (completionRate > 0) {
+      return Colors.red.shade300;
+    } else {
+      return Colors.grey.shade200;
+    }
+  }
+
+  // 날짜별 테두리색을 결정하는 헬퍼 메서드
+  Color _getDayBorderColor(bool isToday, bool isCompleted, bool isFutureDate) {
+    if (isToday) {
+      return Colors.blue.shade600;
+    } else if (isFutureDate) {
+      return Colors.grey.shade300;
+    } else if (isCompleted) {
+      return Colors.green.shade600;
+    } else {
+      return Colors.grey.shade400;
+    }
   }
 }

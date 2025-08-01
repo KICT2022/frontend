@@ -257,4 +257,86 @@ class ReminderProvider with ChangeNotifier {
       onNotificationAdded!('알림 삭제 완료', notificationText, 'medication');
     }
   }
+
+  // 특정 날짜의 복용 달성률을 계산하는 메서드
+  double getDailyCompletionRate(DateTime date) {
+    final dateKey =
+        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    final dayOfWeek = _getKoreanWeekday(date.weekday);
+
+    // 해당 날짜에 복용해야 하는 총 약물 수 계산
+    int totalDosages = 0;
+    int completedDosages = 0;
+
+    for (final reminder in _reminders) {
+      final days = List<String>.from(reminder['days']);
+      if (days.contains(dayOfWeek)) {
+        // 해당 날짜에 복용해야 하는 약물
+        final times = reminder['time'].split(', ');
+        for (final time in times) {
+          totalDosages++;
+          final timeSlot = _getTimeOfDay(time);
+          final key = '${dateKey}_${reminder['id']}_$timeSlot';
+          if (_completionStatus[key] == true) {
+            completedDosages++;
+          }
+        }
+      }
+    }
+
+    if (totalDosages == 0) return 0.0;
+    return (completedDosages / totalDosages) * 100;
+  }
+
+  // 월간 복용 달성률 데이터를 가져오는 메서드
+  Map<int, double> getMonthlyCompletionRates(int year, int month) {
+    final Map<int, double> monthlyRates = {};
+    final daysInMonth = DateTime(year, month + 1, 0).day;
+
+    for (int day = 1; day <= daysInMonth; day++) {
+      final date = DateTime(year, month, day);
+      // 미래 날짜는 계산하지 않음
+      if (date.isAfter(DateTime.now())) {
+        monthlyRates[day] = -1; // -1은 미래 날짜를 의미
+      } else {
+        monthlyRates[day] = getDailyCompletionRate(date);
+      }
+    }
+
+    return monthlyRates;
+  }
+
+  // 요일을 한국어로 변환하는 헬퍼 메서드
+  String _getKoreanWeekday(int weekday) {
+    switch (weekday) {
+      case 1:
+        return '월';
+      case 2:
+        return '화';
+      case 3:
+        return '수';
+      case 4:
+        return '목';
+      case 5:
+        return '금';
+      case 6:
+        return '토';
+      case 7:
+        return '일';
+      default:
+        return '월';
+    }
+  }
+
+  // 시간을 시간대로 변환하는 헬퍼 메서드
+  String _getTimeOfDay(String time) {
+    final hour = int.tryParse(time.split(':')[0]) ?? 0;
+    if (hour >= 6 && hour < 11) {
+      return '아침';
+    } else if (hour >= 11 && hour < 17) {
+      return '점심';
+    } else {
+      return '저녁';
+    }
+  }
 }
