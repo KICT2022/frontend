@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin
@@ -77,44 +78,6 @@ class NotificationService {
       } catch (e) {
         print('정확한 알람 권한 요청 실패: $e');
       }
-    }
-  }
-
-  // 즉시 알림 테스트용 함수
-  static Future<void> showTestNotification() async {
-    try {
-      const AndroidNotificationDetails androidPlatformChannelSpecifics =
-          AndroidNotificationDetails(
-            'test_notification',
-            '테스트 알림',
-            channelDescription: '테스트용 알림입니다.',
-            importance: Importance.high,
-            priority: Priority.high,
-            icon: '@mipmap/ic_launcher',
-            playSound: true,
-            enableVibration: true,
-          );
-
-      const DarwinNotificationDetails iOSPlatformChannelSpecifics =
-          DarwinNotificationDetails();
-
-      const NotificationDetails platformChannelSpecifics = NotificationDetails(
-        android: androidPlatformChannelSpecifics,
-        iOS: iOSPlatformChannelSpecifics,
-      );
-
-      await _flutterLocalNotificationsPlugin.show(
-        99999,
-        '테스트 알림 💊',
-        '알림이 정상적으로 작동합니다!',
-        platformChannelSpecifics,
-        payload: 'test_notification',
-      );
-
-      print('테스트 알림 발송 성공');
-    } catch (e) {
-      print('테스트 알림 발송 실패: $e');
-      rethrow;
     }
   }
 

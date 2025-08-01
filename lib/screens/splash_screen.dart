@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/auth_provider.dart';
 import '../utils/notification_service.dart';
 
@@ -28,8 +29,17 @@ class _SplashScreenState extends State<SplashScreen> {
 
       await authProvider.checkLoginStatus();
 
-      // 알림 권한 요청
-      await NotificationService.initialize(requestPermissions: true);
+      // 앱이 처음 실행되는지 확인
+      final prefs = await SharedPreferences.getInstance();
+      final isFirstLaunch = prefs.getBool('is_first_launch') ?? true;
+
+      // 알림 권한 요청 (새 사용자에게만)
+      await NotificationService.initialize(requestPermissions: isFirstLaunch);
+
+      // 첫 실행이었다면 플래그를 false로 설정
+      if (isFirstLaunch) {
+        await prefs.setBool('is_first_launch', false);
+      }
 
       if (mounted) {
         if (authProvider.isLoggedIn) {
