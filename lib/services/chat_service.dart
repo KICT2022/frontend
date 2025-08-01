@@ -11,21 +11,42 @@ class ChatService {
   // 약물 추천 채팅
   Future<ChatResult> sendMessage(String message) async {
     try {
+      print('🔍 약 추천 요청: $message');
+
       final response = await _apiService.post(
         ApiConfig.chatUrl,
         data: {'message': message},
       );
 
-      if (response.success && response.data != null) {
-        final data = response.data as Map<String, dynamic>;
-        final reply =
-            data['reply'] ?? data['message'] ?? data['response'] ?? '';
+      print('📡 약 추천 응답: success=${response.success}, data=${response.data}');
+      print('📄 응답 데이터 타입: ${response.data.runtimeType}');
 
-        return ChatResult(success: true, reply: reply, data: data);
+      if (response.success && response.data != null) {
+        // String 형태의 응답 처리
+        if (response.data is String) {
+          final reply = response.data as String;
+          print('✅ String 응답으로 약 추천 성공: $reply');
+          return ChatResult(success: true, reply: reply);
+        }
+
+        // Map 형태의 응답 처리
+        if (response.data is Map<String, dynamic>) {
+          final data = response.data as Map<String, dynamic>;
+          final reply =
+              data['reply'] ?? data['message'] ?? data['response'] ?? '';
+
+          print('✅ Map 응답으로 약 추천 성공: $reply');
+          return ChatResult(success: true, reply: reply, data: data);
+        }
+
+        // 기타 형태의 응답
+        print('❓ 알 수 없는 응답 형태: ${response.data.runtimeType}');
+        return ChatResult(success: false, error: '알 수 없는 응답 형태입니다.');
       }
 
       return ChatResult(success: false, error: '메시지 전송에 실패했습니다.');
     } catch (e) {
+      print('❌ 약 추천 중 오류: $e');
       return ChatResult(success: false, error: '메시지 전송 중 오류가 발생했습니다: $e');
     }
   }

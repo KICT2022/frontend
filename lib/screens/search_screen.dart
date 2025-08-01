@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../widgets/bottom_navigation.dart';
 import 'medication_detail_screen.dart';
 import '../models/symptom.dart';
+import '../services/api_manager.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -27,6 +28,14 @@ class _SearchScreenState extends State<SearchScreen> {
   String? _validationMessage;
   // 증상 입력 필드 컨트롤러
   TextEditingController _symptomInputController = TextEditingController();
+
+  // 약 추천 관련 상태 변수
+  bool _isLoadingRecommendation = false;
+  String? _recommendationResult;
+  String? _recommendationError;
+
+  // API 매니저
+  final ApiManager _apiManager = ApiManager();
   // 증상 카테고리 데이터
   final List<Map<String, dynamic>> _symptomCategories = [
     {
@@ -678,35 +687,10 @@ class _SearchScreenState extends State<SearchScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  // 선택된 증상이 있는지 확인
-                  final medicationProvider = Provider.of<MedicationProvider>(
-                    context,
-                    listen: false,
-                  );
-
-                  if (medicationProvider.selectedSymptoms.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('증상을 먼저 선택해주세요.'),
-                        backgroundColor: Colors.orange,
-                      ),
-                    );
-                    return;
-                  }
-
-                  // 약물 상세 화면으로 이동
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) => MedicationDetailScreen(
-                            medications: _medications,
-                            userName: '홍길동', // 실제로는 사용자 정보에서 가져와야 함
-                          ),
-                    ),
-                  );
-                },
+                onPressed:
+                    _isLoadingRecommendation
+                        ? null
+                        : _getMedicationRecommendation,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green.shade600,
                   foregroundColor: Colors.white,
@@ -715,14 +699,291 @@ class _SearchScreenState extends State<SearchScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  '나에게 맞는 약 확인하기',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+                child:
+                    _isLoadingRecommendation
+                        ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                        : const Text(
+                          '나에게 맞는 약 확인하기',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // 약 추천 기능
+  Future<void> _getMedicationRecommendation() async {
+    // 선택된 증상이 있는지 확인
+    final medicationProvider = Provider.of<MedicationProvider>(
+      context,
+      listen: false,
+    );
+
+    if (medicationProvider.selectedSymptoms.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('증상을 먼저 선택해주세요.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoadingRecommendation = true;
+      _recommendationResult = null;
+      _recommendationError = null;
+    });
+
+    try {
+      // 선택된 증상들을 문자열로 결합
+      final selectedSymptoms = medicationProvider.selectedSymptoms.join(', ');
+      print('🔍 약 추천 요청: $selectedSymptoms');
+
+      // 증상에 대한 약 추천 프롬프트 생성
+      final prompt =
+          '다음 증상들에 대한 적절한 약을 추천해주세요: $selectedSymptoms. 각 약의 이름, 효능, 복용법, 주의사항을 포함해서 알려주세요.';
+
+      // API 호출
+      final result = await _apiManager.sendChatMessage(prompt);
+
+      print('📡 약 추천 결과: success=${result.success}, error=${result.error}');
+
+      if (result.success) {
+        setState(() {
+          _recommendationResult = result.reply;
+          _isLoadingRecommendation = false;
+        });
+
+        // 추천 결과 화면으로 이동
+        _showRecommendationResult();
+      } else {
+        setState(() {
+          _recommendationError = result.error ?? '약 추천에 실패했습니다.';
+          _isLoadingRecommendation = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_recommendationError!),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ 약 추천 중 오류: $e');
+      setState(() {
+        _recommendationError = '약 추천 중 오류가 발생했습니다.';
+        _isLoadingRecommendation = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_recommendationError!),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // 추천 결과 화면 표시
+  void _showRecommendationResult() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildRecommendationResultSheet(),
+    );
+  }
+
+  // 추천 결과 시트 위젯
+  Widget _buildRecommendationResultSheet() {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.85,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        children: [
+          // 핸들 바
+          Container(
+            margin: const EdgeInsets.only(top: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 제목
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.medication,
+                        color: const Color(0xFF174D4D),
+                        size: 28,
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        '증상별 약 추천',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF174D4D),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 선택된 증상 표시
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF174D4D).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFF174D4D).withOpacity(0.2),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '선택된 증상',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF174D4D),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Consumer<MedicationProvider>(
+                          builder: (context, provider, child) {
+                            return Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children:
+                                  provider.selectedSymptoms.map((symptom) {
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF174D4D),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        symptom,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // 추천 결과
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.green.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.recommend,
+                              color: Colors.green.shade700,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '추천 약물',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _recommendationResult ?? '',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey.shade800,
+                            height: 1.6,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // 하단 버튼
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF174D4D),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        '확인',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
