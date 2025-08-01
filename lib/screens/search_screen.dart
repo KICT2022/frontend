@@ -33,6 +33,9 @@ class _SearchScreenState extends State<SearchScreen> {
   bool _isLoadingRecommendation = false;
   String? _recommendationResult;
   String? _recommendationError;
+  List<Map<String, String>> _parsedMedications = [];
+  final PageController _medicationPageController = PageController();
+  int _currentMedicationPage = 0;
 
   // API 매니저
   final ApiManager _apiManager = ApiManager();
@@ -768,6 +771,9 @@ class _SearchScreenState extends State<SearchScreen> {
           _isLoadingRecommendation = false;
         });
 
+        // 추천 결과 파싱
+        _parseMedicationRecommendation(result.reply ?? '');
+
         // 추천 결과 화면으로 이동
         _showRecommendationResult();
       } else {
@@ -807,6 +813,72 @@ class _SearchScreenState extends State<SearchScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => _buildRecommendationResultSheet(),
     );
+  }
+
+  // 약 추천 결과 파싱
+  void _parseMedicationRecommendation(String result) {
+    _parsedMedications.clear();
+
+    // 결과 텍스트를 줄바꿈으로 분리
+    List<String> lines = result.split('\n');
+    Map<String, String> currentMedication = {};
+
+    for (String line in lines) {
+      line = line.trim();
+      if (line.isEmpty) continue;
+
+      // 약 이름 패턴 (숫자로 시작하거나 "약:", "약물:" 등으로 시작)
+      if (RegExp(r'^\d+\.|^약:|^약물:|^[가-힣]+약').hasMatch(line)) {
+        // 이전 약 정보가 있으면 저장
+        if (currentMedication.isNotEmpty) {
+          _parsedMedications.add(Map.from(currentMedication));
+        }
+
+        // 새로운 약 시작
+        currentMedication = {
+          'name': line.replaceAll(RegExp(r'^\d+\.|^약:|^약물:'), '').trim(),
+          'description': '',
+          'usage': '',
+          'precautions': '',
+        };
+      } else if (currentMedication.isNotEmpty) {
+        // 효능, 복용법, 주의사항 키워드 확인
+        if (line.contains('효능') || line.contains('작용') || line.contains('효과')) {
+          currentMedication['description'] = line;
+        } else if (line.contains('복용') ||
+            line.contains('용법') ||
+            line.contains('투여')) {
+          currentMedication['usage'] = line;
+        } else if (line.contains('주의') ||
+            line.contains('부작용') ||
+            line.contains('금기')) {
+          currentMedication['precautions'] = line;
+        } else {
+          // 일반적인 설명
+          if (currentMedication['description']!.isEmpty) {
+            currentMedication['description'] = line;
+          } else {
+            currentMedication['description'] =
+                '${currentMedication['description']}\n$line';
+          }
+        }
+      }
+    }
+
+    // 마지막 약 정보 추가
+    if (currentMedication.isNotEmpty) {
+      _parsedMedications.add(Map.from(currentMedication));
+    }
+
+    // 파싱된 약이 없으면 전체 텍스트를 하나의 약으로 처리
+    if (_parsedMedications.isEmpty) {
+      _parsedMedications.add({
+        'name': '추천 약물',
+        'description': result,
+        'usage': '',
+        'precautions': '',
+      });
+    }
   }
 
   // 추천 결과 시트 위젯
@@ -916,12 +988,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   // 추천 결과
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade50,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.green.shade200),
-                    ),
+                    height: 400,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -934,7 +1001,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              '추천 약물',
+                              '추천 약물 (${_parsedMedications.length}개)',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -944,14 +1011,53 @@ class _SearchScreenState extends State<SearchScreen> {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        Text(
-                          _recommendationResult ?? '',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey.shade800,
-                            height: 1.6,
-                          ),
+                        Expanded(
+                          child:
+                              _parsedMedications.length > 1
+                                  ? PageView.builder(
+                                    controller: _medicationPageController,
+                                    itemCount: _parsedMedications.length,
+                                    onPageChanged: (index) {
+                                      setState(() {
+                                        _currentMedicationPage = index;
+                                      });
+                                    },
+                                    itemBuilder: (context, index) {
+                                      return _buildMedicationCard(
+                                        _parsedMedications[index],
+                                      );
+                                    },
+                                  )
+                                  : _parsedMedications.isNotEmpty
+                                  ? _buildMedicationCard(
+                                    _parsedMedications.first,
+                                  )
+                                  : Container(),
                         ),
+                        // 페이지 인디케이터 (여러 약이 있을 때만)
+                        if (_parsedMedications.length > 1) ...[
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(
+                              _parsedMedications.length,
+                              (index) => Container(
+                                width: 8,
+                                height: 8,
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color:
+                                      index == _currentMedicationPage
+                                          ? Colors.green.shade700
+                                          : Colors.grey.shade300,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -985,6 +1091,121 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  // 약 카드 위젯
+  Widget _buildMedicationCard(Map<String, String> medication) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.green.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 약 이름
+            Row(
+              children: [
+                Icon(Icons.medication, color: Colors.green.shade700, size: 24),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    medication['name'] ?? '약물명',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green.shade700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // 효능/작용
+            if (medication['description']?.isNotEmpty == true) ...[
+              _buildInfoSection(
+                '효능/작용',
+                Icons.healing,
+                medication['description']!,
+                Colors.blue.shade700,
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // 복용법
+            if (medication['usage']?.isNotEmpty == true) ...[
+              _buildInfoSection(
+                '복용법',
+                Icons.schedule,
+                medication['usage']!,
+                Colors.orange.shade700,
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // 주의사항
+            if (medication['precautions']?.isNotEmpty == true) ...[
+              _buildInfoSection(
+                '주의사항',
+                Icons.warning,
+                medication['precautions']!,
+                Colors.red.shade700,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 정보 섹션 위젯
+  Widget _buildInfoSection(
+    String title,
+    IconData icon,
+    String content,
+    Color color,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          content,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey.shade800,
+            height: 1.4,
+          ),
+        ),
+      ],
     );
   }
 
