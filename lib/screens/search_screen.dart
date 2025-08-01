@@ -758,7 +758,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
       // 증상에 대한 약 추천 프롬프트 생성
       final prompt =
-          '다음 증상들에 대한 적절한 약을 추천해주세요: $selectedSymptoms. 각 약의 이름, 효능, 복용법, 주의사항을 포함해서 알려주세요.';
+          '다음 증상들에 대한 구체적인 약물명과 정보를 알려주세요: $selectedSymptoms. 각 약의 정확한 이름, 효능, 복용법, 주의사항을 명확히 구분해서 작성해주세요. 증상이 아닌 실제 약물명을 추천해주세요.';
 
       // API 호출
       final result = await _apiManager.sendChatMessage(prompt);
@@ -771,8 +771,16 @@ class _SearchScreenState extends State<SearchScreen> {
           _isLoadingRecommendation = false;
         });
 
+        print('📄 약 추천 응답 내용: ${result.reply}');
+        print('📄 약 추천 응답 길이: ${result.reply?.length}');
+
         // 추천 결과 파싱
         _parseMedicationRecommendation(result.reply ?? '');
+
+        print('📄 파싱된 약물 개수: ${_parsedMedications.length}');
+        for (int i = 0; i < _parsedMedications.length; i++) {
+          print('📄 약물 ${i + 1}: ${_parsedMedications[i]['name']}');
+        }
 
         // 추천 결과 화면으로 이동
         _showRecommendationResult();
@@ -823,24 +831,81 @@ class _SearchScreenState extends State<SearchScreen> {
     List<String> lines = result.split('\n');
     Map<String, String> currentMedication = {};
 
+    // 증상 키워드 목록 (약물명으로 잘못 파싱되는 것을 방지)
+    final List<String> symptomKeywords = [
+      '두통',
+      '발열',
+      '기침',
+      '복통',
+      '메스꺼움',
+      '설사',
+      '어지럼증',
+      '피로감',
+      '식욕저하',
+      '체중감소',
+      '오한',
+      '피로',
+      '무기력',
+      '식욕 저하',
+      '체중 감소',
+      '눈충혈',
+      '코막힘',
+      '귀통증',
+      '치통',
+      '가래',
+      '인후통',
+      '목쉼',
+      '호흡곤란',
+      '열이 남',
+      '몸이 떨림',
+      '무기력',
+      '목이 아파요',
+      '목 쉼',
+      '음성 변화',
+      '숨참',
+      '배가 아파요',
+      '구토',
+      '눈 충혈',
+      '가려움',
+      '통증',
+      '콧물',
+      '이명',
+      '귀막힘',
+      '이가 아파요',
+    ];
+
     for (String line in lines) {
       line = line.trim();
       if (line.isEmpty) continue;
 
       // 약 이름 패턴 (숫자로 시작하거나 "약:", "약물:" 등으로 시작)
-      if (RegExp(r'^\d+\.|^약:|^약물:|^[가-힣]+약').hasMatch(line)) {
+      if (RegExp(
+        r'^\d+\.|^약:|^약물:|^[가-힣]+약|^[가-힣]+제|^[가-힣]+정|^[가-힣]+캡슐|^[가-힣]+시럽|^[가-힣]+액',
+      ).hasMatch(line)) {
         // 이전 약 정보가 있으면 저장
         if (currentMedication.isNotEmpty) {
           _parsedMedications.add(Map.from(currentMedication));
         }
 
         // 새로운 약 시작
-        currentMedication = {
-          'name': line.replaceAll(RegExp(r'^\d+\.|^약:|^약물:'), '').trim(),
-          'description': '',
-          'usage': '',
-          'precautions': '',
-        };
+        String medicationName =
+            line.replaceAll(RegExp(r'^\d+\.|^약:|^약물:'), '').trim();
+
+        // 증상이 아닌 실제 약물명인지 확인
+        bool isSymptom = symptomKeywords.any(
+          (symptom) =>
+              medicationName.contains(symptom) ||
+              symptom.contains(medicationName),
+        );
+
+        if (!isSymptom && medicationName.length > 1) {
+          currentMedication = {
+            'name': medicationName,
+            'description': '',
+            'usage': '',
+            'precautions': '',
+          };
+        }
       } else if (currentMedication.isNotEmpty) {
         // 효능, 복용법, 주의사항 키워드 확인
         if (line.contains('효능') || line.contains('작용') || line.contains('효과')) {
