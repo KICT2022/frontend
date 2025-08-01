@@ -19,6 +19,7 @@ import 'screens/settings_screen.dart';
 import 'screens/notification_screen.dart';
 import 'screens/medication_search_result_screen.dart';
 import 'screens/profile_edit_screen.dart';
+import 'screens/pharmacy_map_screen.dart';
 import 'utils/notification_service.dart';
 
 void main() async {
@@ -139,6 +140,10 @@ class MyApp extends StatelessWidget {
         GoRoute(
           path: '/profile-edit',
           builder: (context, state) => const ProfileEditScreen(),
+        ),
+        GoRoute(
+          path: '/pharmacy-map',
+          builder: (context, state) => const PharmacyMapScreen(),
         ),
       ],
     );

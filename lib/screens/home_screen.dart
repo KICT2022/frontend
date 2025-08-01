@@ -416,9 +416,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   context.go('/search');
                   break;
                 case 2:
-                  context.go('/medication');
+                  context.go('/pharmacy-map');
                   break;
                 case 3:
+                  context.go('/medication');
+                  break;
+                case 4:
                   context.go('/profile');
                   break;
               }

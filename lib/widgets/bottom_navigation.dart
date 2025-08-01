@@ -45,6 +45,11 @@ class BottomNavigation extends StatelessWidget {
             label: '진단',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.location_on_outlined),
+            activeIcon: Icon(Icons.location_on),
+            label: '약국',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.medication_outlined),
             activeIcon: Icon(Icons.medication),
             label: '복약',

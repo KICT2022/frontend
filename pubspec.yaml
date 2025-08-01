@@ -58,6 +58,9 @@ dependencies:
   
   # 시간대 처리
   timezone: ^0.9.4
+  
+  # URL 실행
+  url_launcher: ^6.2.5
 
 dev_dependencies:
   flutter_test:

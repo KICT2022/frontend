@@ -223,7 +223,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
         ),
       ),
       bottomNavigationBar: BottomNavigation(
-        currentIndex: 2,
+        currentIndex: 3,
         onTap: (index) {
           switch (index) {
             case 0:
@@ -233,9 +233,12 @@ class _MedicationScreenState extends State<MedicationScreen> {
               context.go('/search');
               break;
             case 2:
-              // 이미 약물 화면이므로 아무것도 하지 않음
+              context.go('/pharmacy-map');
               break;
             case 3:
+              // 이미 약물 화면이므로 아무것도 하지 않음
+              break;
+            case 4:
               context.go('/profile');
               break;
           }

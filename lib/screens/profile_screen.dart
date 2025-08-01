@@ -266,7 +266,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         },
       ),
       bottomNavigationBar: BottomNavigation(
-        currentIndex: 3,
+        currentIndex: 4,
         onTap: (index) {
           switch (index) {
             case 0:
@@ -276,9 +276,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               context.go('/search');
               break;
             case 2:
-              context.go('/medication');
+              context.go('/pharmacy-map');
               break;
             case 3:
+              context.go('/medication');
+              break;
+            case 4:
               // 이미 프로필 화면이므로 아무것도 하지 않음
               break;
           }
