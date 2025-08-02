@@ -81,115 +81,17 @@ class _MedicationSearchResultScreenState
     try {
       _parsedMedications.clear();
       print('🔍 파싱 시작: ${result.length}자');
+      print('📄 서버 응답: $result');
 
-      // 서버 응답에서 불필요한 텍스트 제거
-      String cleanResult = result;
+      // 대괄호 패턴으로 순차적 파싱 시도
+      Map<String, String> medicationData = _parseBracketFormat(result);
 
-      // 영어로 된 안내 문구 제거
-      cleanResult = cleanResult.replaceAll(
-        RegExp(r"I'm glad to provide information.*?always advised\."),
-        '',
-      );
-      cleanResult = cleanResult.replaceAll(
-        RegExp(r"Please remember that.*?healthcare provider\."),
-        '',
-      );
-
-      // 결과 텍스트를 줄바꿈으로 분리
-      List<String> lines = cleanResult.split('\n');
-      Map<String, String> currentMedication = {};
-      String currentSection = '';
-
-      for (String line in lines) {
-        line = line.trim();
-        if (line.isEmpty) continue;
-
-        print('📝 처리 중인 라인: $line');
-
-        // 새로운 약물 시작 패턴 확인 (숫자. 로 시작하거나 약물명: 으로 시작)
-        if (RegExp(r'^\d+\.\s*').hasMatch(line)) {
-          // 이전 약물 정보가 있으면 저장
-          if (currentMedication.isNotEmpty) {
-            _parsedMedications.add(Map.from(currentMedication));
-            print('💾 약물 저장: ${currentMedication['name']}');
-          }
-
-          // 새로운 약물 시작
-          String medicationName =
-              line.replaceAll(RegExp(r'^\d+\.\s*'), '').trim();
-
-          // 약물명: 이 포함되어 있으면 제거
-          if (medicationName.startsWith('약물명:')) {
-            medicationName = medicationName.substring('약물명:'.length).trim();
-          }
-
-          print('🆕 새 약물 시작: $medicationName');
-
-          currentMedication = {
-            'name': medicationName,
-            'description': '',
-            'usage': '',
-            'sideEffects': '',
-            'precautions': '',
-          };
-          currentSection = 'name';
-        } else if (line.startsWith('약물명:')) {
-          // 이전 약물 정보가 있으면 저장
-          if (currentMedication.isNotEmpty) {
-            _parsedMedications.add(Map.from(currentMedication));
-            print('💾 약물 저장: ${currentMedication['name']}');
-          }
-
-          String medicationName = line.substring('약물명:'.length).trim();
-          print('🆕 새 약물 시작 (약물명으로): $medicationName');
-
-          currentMedication = {
-            'name': medicationName,
-            'description': '',
-            'usage': '',
-            'sideEffects': '',
-            'precautions': '',
-          };
-          currentSection = 'name';
-        } else if (currentMedication.isNotEmpty) {
-          // 각 섹션별로 내용 분류
-          if (line.startsWith('효능/작용:')) {
-            String content = line.substring('효능/작용:'.length).trim();
-            currentMedication['description'] = content;
-            currentSection = 'description';
-            print('📝 효능 설정: $content');
-          } else if (line.startsWith('복용법:')) {
-            String content = line.substring('복용법:'.length).trim();
-            currentMedication['usage'] = content;
-            currentSection = 'usage';
-            print('📝 복용법 설정: $content');
-          } else if (line.startsWith('주의사항:')) {
-            String content = line.substring('주의사항:'.length).trim();
-            currentMedication['precautions'] = content;
-            currentSection = 'precautions';
-            print('📝 주의사항 설정: $content');
-          } else if (line.startsWith('부작용:')) {
-            String content = line.substring('부작용:'.length).trim();
-            currentMedication['sideEffects'] = content;
-            currentSection = 'sideEffects';
-            print('📝 부작용 설정: $content');
-          } else if (line.isNotEmpty && currentSection.isNotEmpty) {
-            // 섹션 키워드가 없는 경우, 현재 섹션에 추가
-            if (currentMedication[currentSection]!.isNotEmpty) {
-              currentMedication[currentSection] =
-                  '${currentMedication[currentSection]} $line';
-            } else {
-              currentMedication[currentSection] = line;
-            }
-            print('📝 $currentSection에 추가: $line');
-          }
-        }
-      }
-
-      // 마지막 약물 정보 추가
-      if (currentMedication.isNotEmpty) {
-        _parsedMedications.add(Map.from(currentMedication));
-        print('💾 마지막 약물 저장: ${currentMedication['name']}');
+      if (medicationData.isNotEmpty) {
+        _parsedMedications.add(medicationData);
+        print('✅ 대괄호 형식으로 파싱 완료');
+      } else {
+        // 대괄호 형식이 아닌 경우 기존 파싱 로직 사용
+        _parseTraditionalFormat(result);
       }
 
       // 파싱된 약이 없으면 서버 응답을 그대로 하나의 약물로 처리
@@ -364,85 +266,12 @@ class _MedicationSearchResultScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 검색어 표시
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 4,
-              color: Colors.white,
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF174D4D).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.medication,
-                        size: 30,
-                        color: Color(0xFF174D4D),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.searchQuery,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF174D4D),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '약 정보 검색 결과 (${_parsedMedications.length}개)',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
             // 약물 카드들
             SizedBox(
               height: 500,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.recommend,
-                        color: Colors.green.shade700,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '약물 정보 (${_parsedMedications.length}개)',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
                   Expanded(
                     child:
                         _parsedMedications.length > 1
@@ -526,60 +355,6 @@ class _MedicationSearchResultScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 검색어 표시
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 4,
-              color: Colors.white,
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF174D4D).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.medication,
-                        size: 30,
-                        color: Color(0xFF174D4D),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.searchQuery,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF174D4D),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '약 정보 검색 결과',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
             // 약 정보 내용
             Card(
               shape: RoundedRectangleBorder(
@@ -1219,5 +994,279 @@ class _MedicationSearchResultScreenState
         ],
       ),
     );
+  }
+
+  // 내용에서 라벨을 제거하는 헬퍼 메서드
+  String _cleanContentFromLabels(String content) {
+    // 일반적인 라벨 패턴들 제거
+    final patterns = [
+      '약물명:',
+      '효능/작용:',
+      '효능:',
+      '작용:',
+      '복용법:',
+      '복용:',
+      '용법:',
+      '복용량:',
+      '주의사항:',
+      '주의:',
+      '주의점:',
+      '부작용:',
+      '이상반응:',
+      '부작용들:',
+    ];
+
+    String cleaned = content;
+    for (String pattern in patterns) {
+      if (cleaned.startsWith(pattern)) {
+        cleaned = cleaned.substring(pattern.length).trim();
+        break;
+      }
+    }
+    return cleaned;
+  }
+
+  // 특정 라벨들에서 내용을 추출하는 헬퍼 메서드
+  String _extractContent(String line, List<String> labels) {
+    for (String label in labels) {
+      if (line.startsWith(label)) {
+        return line.substring(label.length).trim();
+      }
+    }
+    // 라벨이 없으면 전체 라인에서 공통 라벨들 제거
+    return _cleanContentFromLabels(line);
+  }
+
+  // 약물명을 추출하는 메서드
+  String _extractMedicationName(String text) {
+    // 다양한 패턴으로 약물명 추출 시도
+    List<String> namePatterns = [
+      r'약물명[:\s]*([^\[\n\r]+?)(?=\s*(?:효능|작용|복용|용법|주의|부작용|\[|$))',
+      r'약물\s*:\s*([^\[\n\r]+?)(?=\s*(?:효능|작용|복용|용법|주의|부작용|\[|$))',
+      r'제품명[:\s]*([^\[\n\r]+?)(?=\s*(?:효능|작용|복용|용법|주의|부작용|\[|$))',
+      r'^([가-힣a-zA-Z0-9\s\-\(\)]+)(?=\s*(?:효능|작용|\[))',
+    ];
+
+    for (String pattern in namePatterns) {
+      RegExp regex = RegExp(pattern, multiLine: true);
+      Match? match = regex.firstMatch(text);
+      if (match != null) {
+        String name = match.group(1)?.trim() ?? '';
+        name = _cleanContentFromLabels(name);
+        if (name.isNotEmpty && name.length >= 2) {
+          print('📝 약물명 추출 성공: $name (패턴: $pattern)');
+          return name;
+        }
+      }
+    }
+
+    print('⚠️ 약물명 추출 실패, 검색어 사용: ${widget.searchQuery}');
+    return widget.searchQuery;
+  }
+
+  // 특정 섹션의 내용을 추출하는 메서드
+  String _extractSectionContent(String text, List<String> labels) {
+    for (String label in labels) {
+      // 라벨 다음의 내용을 추출하는 정규표현식
+      String pattern =
+          label.replaceAll(':', r'\s*:?\s*') +
+          r'([^\n\r]*(?:\n(?!\s*(?:약물명|효능|작용|복용|용법|주의|부작용)[:\s])[^\n\r]*)*)';
+      RegExp regex = RegExp(pattern, multiLine: true, dotAll: true);
+      Match? match = regex.firstMatch(text);
+
+      if (match != null) {
+        String content = match.group(1)?.trim() ?? '';
+
+        // 대괄호 안의 내용 추출
+        if (content.contains('[') && content.contains(']')) {
+          RegExp bracketRegex = RegExp(r'\[([^\]]+)\]');
+          Match? bracketMatch = bracketRegex.firstMatch(content);
+          if (bracketMatch != null) {
+            content = bracketMatch.group(1)?.trim() ?? content;
+          }
+        }
+
+        // 다음 라벨이 나타나면 거기서 중단
+        List<String> allLabels = [
+          '약물명:',
+          '효능/작용:',
+          '효능:',
+          '작용:',
+          '복용법:',
+          '복용:',
+          '용법:',
+          '주의사항:',
+          '주의:',
+          '부작용:',
+          '이상반응:',
+        ];
+
+        for (String nextLabel in allLabels) {
+          if (content.contains(nextLabel)) {
+            int index = content.indexOf(nextLabel);
+            content = content.substring(0, index).trim();
+            break;
+          }
+        }
+
+        content = _cleanContentFromLabels(content);
+        if (content.isNotEmpty) {
+          print('📝 섹션 내용 추출 성공 ($label): $content');
+          return content;
+        }
+      }
+    }
+
+    print('❌ 섹션 내용 없음 (라벨: ${labels.join(', ')})');
+    return '';
+  }
+
+  // 향상된 파싱 메서드 (라벨 기반 + 대괄호 형식 지원)
+  Map<String, String> _parseBracketFormat(String result) {
+    Map<String, String> medicationData = {
+      'name': widget.searchQuery,
+      'description': '',
+      'usage': '',
+      'precautions': '',
+      'sideEffects': '',
+    };
+
+    try {
+      print('🔍 향상된 파싱 시도');
+      print('📄 전체 서버 응답: $result');
+
+      // 서버 응답에서 불필요한 텍스트 제거
+      String cleanResult = result;
+      cleanResult = cleanResult.replaceAll(
+        RegExp(r"I'm glad to provide information.*?always advised\."),
+        '',
+      );
+      cleanResult = cleanResult.replaceAll(
+        RegExp(r"Please remember that.*?healthcare provider\."),
+        '',
+      );
+
+      // 약물명 추출 시도
+      String extractedName = _extractMedicationName(cleanResult);
+      if (extractedName.isNotEmpty && extractedName.length >= 2) {
+        medicationData['name'] = extractedName;
+      }
+
+      // 각 섹션별 내용 추출
+      medicationData['description'] = _extractSectionContent(cleanResult, [
+        '효능/작용:',
+        '효능:',
+        '작용:',
+        '효과:',
+        '치료효과:',
+        '약리작용:',
+      ]);
+
+      medicationData['usage'] = _extractSectionContent(cleanResult, [
+        '복용법:',
+        '복용:',
+        '용법:',
+        '복용량:',
+        '사용법:',
+        '투여법:',
+        '복용방법:',
+      ]);
+
+      medicationData['precautions'] = _extractSectionContent(cleanResult, [
+        '주의사항:',
+        '주의:',
+        '주의점:',
+        '경고:',
+        '금기사항:',
+        '주의할점:',
+      ]);
+
+      medicationData['sideEffects'] = _extractSectionContent(cleanResult, [
+        '부작용:',
+        '이상반응:',
+        '부작용들:',
+        '이상증상:',
+        'Side effects:',
+        'side effects:',
+      ]);
+
+      // 결과 로깅
+      print('📋 파싱 결과:');
+      print('  약물명: ${medicationData['name']}');
+      print('  효능/작용: ${medicationData['description']}');
+      print('  복용법: ${medicationData['usage']}');
+      print('  주의사항: ${medicationData['precautions']}');
+      print('  부작용: ${medicationData['sideEffects']}');
+
+      // 모든 필드가 비어있지 않으면 성공으로 간주
+      bool hasValidContent =
+          medicationData['description']!.isNotEmpty ||
+          medicationData['usage']!.isNotEmpty ||
+          medicationData['precautions']!.isNotEmpty ||
+          medicationData['sideEffects']!.isNotEmpty;
+
+      if (hasValidContent) {
+        print('✅ 파싱 성공');
+        return medicationData;
+      }
+    } catch (e) {
+      print('❌ 파싱 오류: $e');
+    }
+
+    print('❌ 유효한 내용을 찾을 수 없음');
+    return {};
+  }
+
+  // 기존 형식으로 파싱하는 메서드 (백업용)
+  void _parseTraditionalFormat(String result) {
+    print('🔍 기존 형식으로 파싱');
+
+    // 서버 응답에서 불필요한 텍스트 제거
+    String cleanResult = result;
+    cleanResult = cleanResult.replaceAll(
+      RegExp(r"I'm glad to provide information.*?always advised\."),
+      '',
+    );
+    cleanResult = cleanResult.replaceAll(
+      RegExp(r"Please remember that.*?healthcare provider\."),
+      '',
+    );
+
+    // 결과 텍스트를 줄바꿈으로 분리
+    List<String> lines = cleanResult.split('\n');
+    Map<String, String> currentMedication = {
+      'name': widget.searchQuery,
+      'description': '',
+      'usage': '',
+      'sideEffects': '',
+      'precautions': '',
+    };
+
+    for (String line in lines) {
+      line = line.trim();
+      if (line.isEmpty) continue;
+
+      // 각 섹션별로 내용 분류
+      if (line.contains('효능') ||
+          line.contains('작용') ||
+          line.startsWith('효능/작용:')) {
+        String content = _extractContent(line, ['효능/작용:', '효능:', '작용:']);
+        currentMedication['description'] = content;
+      } else if (line.contains('복용') ||
+          line.contains('용법') ||
+          line.startsWith('복용법:')) {
+        String content = _extractContent(line, ['복용법:', '복용:', '용법:', '복용량:']);
+        currentMedication['usage'] = content;
+      } else if (line.contains('주의') || line.startsWith('주의사항:')) {
+        String content = _extractContent(line, ['주의사항:', '주의:', '주의점:']);
+        currentMedication['precautions'] = content;
+      } else if (line.contains('부작용') || line.startsWith('부작용:')) {
+        String content = _extractContent(line, ['부작용:', '이상반응:', '부작용들:']);
+        currentMedication['sideEffects'] = content;
+      }
+    }
+
+    // 약물 정보 추가
+    _parsedMedications.add(currentMedication);
   }
 }
