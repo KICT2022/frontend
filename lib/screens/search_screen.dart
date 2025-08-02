@@ -1944,18 +1944,18 @@ class _SearchScreenState extends State<SearchScreen> {
   // 여러 약물을 파싱하는 메서드
   void _parseMultipleMedications(String result) {
     print('🔍 여러 약물 파싱 시작');
-    
+
     // 1. 2. 3. 등으로 구분된 약물들 분리
     List<String> medicationBlocks = [];
-    
+
     // 숫자로 시작하는 패턴으로 분리
     List<String> lines = result.split('\n');
     String currentBlock = '';
-    
+
     for (String line in lines) {
       line = line.trim();
       if (line.isEmpty) continue;
-      
+
       // 새로운 약물 시작 (숫자. 로 시작)
       if (RegExp(r'^\d+\.\s*').hasMatch(line)) {
         if (currentBlock.isNotEmpty) {
@@ -1966,24 +1966,27 @@ class _SearchScreenState extends State<SearchScreen> {
         currentBlock += '\n$line';
       }
     }
-    
+
     // 마지막 블록 추가
     if (currentBlock.isNotEmpty) {
       medicationBlocks.add(currentBlock.trim());
     }
-    
+
     print('📦 발견된 약물 블록 수: ${medicationBlocks.length}');
-    
+
     // 각 블록을 개별 약물로 파싱
     for (int i = 0; i < medicationBlocks.length; i++) {
       print('📋 약물 블록 ${i + 1} 파싱 중...');
-      Map<String, String> medicationData = _parseSingleMedication(medicationBlocks[i], i + 1);
+      Map<String, String> medicationData = _parseSingleMedication(
+        medicationBlocks[i],
+        i + 1,
+      );
       if (medicationData.isNotEmpty) {
         _parsedMedications.add(medicationData);
         print('✅ 약물 ${i + 1} 파싱 완료: ${medicationData['name']}');
       }
     }
-    
+
     // 파싱된 약물이 없으면 전체를 하나의 약물로 처리
     if (_parsedMedications.isEmpty) {
       print('⚠️ 블록 파싱 실패, 전체 텍스트를 하나의 약물로 파싱');
@@ -1994,7 +1997,8 @@ class _SearchScreenState extends State<SearchScreen> {
         // 최후의 수단: 서버 응답을 그대로 사용
         _parsedMedications.add({
           'name': '서버 추천 약물',
-          'description': result.length > 200 ? result.substring(0, 200) + '...' : result,
+          'description':
+              result.length > 200 ? result.substring(0, 200) + '...' : result,
           'usage': '의사와 상담 후 복용하세요.',
           'sideEffects': '개인차가 있을 수 있습니다.',
           'precautions': '복용 전 의료진과 상담하세요.',
@@ -2004,7 +2008,10 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   // 단일 약물을 파싱하는 메서드 (medication_search_result_screen.dart와 동일한 로직)
-  Map<String, String> _parseSingleMedication(String text, int medicationNumber) {
+  Map<String, String> _parseSingleMedication(
+    String text,
+    int medicationNumber,
+  ) {
     Map<String, String> medicationData = {
       'name': '약물 $medicationNumber',
       'description': '',
@@ -2015,7 +2022,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
     try {
       print('🔍 단일 약물 파싱 시도');
-      
+
       // 약물명 추출 시도
       String extractedName = _extractMedicationName(text);
       if (extractedName.isNotEmpty && extractedName.length >= 2) {
@@ -2069,7 +2076,8 @@ class _SearchScreenState extends State<SearchScreen> {
       print('  부작용: ${medicationData['sideEffects']}');
 
       // 유효한 내용이 있는지 확인
-      bool hasValidContent = medicationData['description']!.isNotEmpty ||
+      bool hasValidContent =
+          medicationData['description']!.isNotEmpty ||
           medicationData['usage']!.isNotEmpty ||
           medicationData['precautions']!.isNotEmpty ||
           medicationData['sideEffects']!.isNotEmpty;
@@ -2078,7 +2086,6 @@ class _SearchScreenState extends State<SearchScreen> {
         print('✅ 단일 약물 파싱 성공');
         return medicationData;
       }
-
     } catch (e) {
       print('❌ 단일 약물 파싱 오류: $e');
     }
