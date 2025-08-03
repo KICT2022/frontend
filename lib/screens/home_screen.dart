@@ -13,7 +13,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final int _currentIndex = 0;
   final _searchController = TextEditingController();
 
   // 건강 포춘쿠키 메시지 리스트
@@ -154,8 +153,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Consumer<NotificationProvider>(
       builder: (context, notificationProvider, child) {
-        final isSeniorMode = notificationProvider.isSeniorMode;
-
         return Scaffold(
           backgroundColor: const Color(0xFFF6F8FA), // 밝은 그레이 배경
           appBar: AppBar(
@@ -562,61 +559,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildAchievementItem(
-    String day,
-    int percentage,
-    bool isSeniorMode,
-    double fontSize,
-  ) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: isSeniorMode ? 4.0 : 3.0),
-      child: Row(
-        children: [
-          SizedBox(
-            width: isSeniorMode ? 32.0 : 28.0,
-            child: Text(
-              day,
-              style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w500),
-            ),
-          ),
-          Expanded(
-            child: Container(
-              height: isSeniorMode ? 10.0 : 8.0,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(isSeniorMode ? 5.0 : 4.0),
-              ),
-              child: FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: percentage / 100,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade400,
-                    borderRadius: BorderRadius.circular(
-                      isSeniorMode ? 5.0 : 4.0,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          SizedBox(width: isSeniorMode ? 10.0 : 8.0),
-          SizedBox(
-            width: isSeniorMode ? 32.0 : 28.0,
-            child: Text(
-              '$percentage%',
-              style: TextStyle(
-                fontSize: fontSize,
-                fontWeight: FontWeight.w600,
-                color: Colors.green.shade600,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
