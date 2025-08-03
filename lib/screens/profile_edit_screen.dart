@@ -521,7 +521,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       }
                       onChanged(newSelectedItems);
                     },
-                    selectedColor: const Color(0xFF174D4D).withOpacity(0.2),
+                    selectedColor: const Color(
+                      0xFF174D4D,
+                    ).withValues(alpha: 0.2),
                     checkmarkColor: const Color(0xFF174D4D),
                     backgroundColor: Colors.grey.shade200,
                     labelStyle: TextStyle(
@@ -631,10 +633,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF174D4D).withOpacity(0.1),
+                      color: const Color(0xFF174D4D).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: const Color(0xFF174D4D).withOpacity(0.3),
+                        color: const Color(0xFF174D4D).withValues(alpha: 0.3),
                       ),
                     ),
                     child: Row(
@@ -654,7 +656,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(2),
                             decoration: BoxDecoration(
-                              color: Colors.red.withOpacity(0.1),
+                              color: Colors.red.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Icon(

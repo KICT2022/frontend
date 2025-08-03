@@ -281,9 +281,9 @@ class _MedicationScreenState extends State<MedicationScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: color.withOpacity(0.3), width: 1),
+          border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
         ),
         child: Column(
           children: [
@@ -572,8 +572,8 @@ class _MedicationScreenState extends State<MedicationScreen> {
                 !isEnabled
                     ? Colors.grey.shade50
                     : isCompleted
-                    ? activeColor.withOpacity(0.2)
-                    : activeColor.withOpacity(0.05),
+                    ? activeColor.withValues(alpha: 0.2)
+                    : activeColor.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(6),
             border: Border.all(
               color:
@@ -581,7 +581,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
                       ? Colors.grey.shade200
                       : isCompleted
                       ? activeColor
-                      : activeColor.withOpacity(0.3),
+                      : activeColor.withValues(alpha: 0.3),
               width: isCompleted ? 2 : 1,
             ),
           ),
@@ -599,7 +599,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
                         ? Colors.grey.shade400
                         : isCompleted
                         ? activeColor
-                        : activeColor.withOpacity(0.6),
+                        : activeColor.withValues(alpha: 0.6),
               ),
               const SizedBox(height: 4),
               Text(
@@ -612,7 +612,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
                           ? Colors.grey.shade500
                           : isCompleted
                           ? activeColor
-                          : activeColor.withOpacity(0.8),
+                          : activeColor.withValues(alpha: 0.8),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -653,7 +653,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Color(0xFF174D4D).withOpacity(0.1),
+                  color: Color(0xFF174D4D).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
@@ -1131,7 +1131,9 @@ class _MedicationScreenState extends State<MedicationScreen> {
                                   }
                                 });
                               },
-                              selectedColor: Color(0xFF174D4D).withOpacity(0.3),
+                              selectedColor: Color(
+                                0xFF174D4D,
+                              ).withValues(alpha: 0.3),
                               checkmarkColor: Color(0xFF174D4D),
                             );
                           }).toList(),

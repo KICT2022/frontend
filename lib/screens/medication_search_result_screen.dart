@@ -444,7 +444,7 @@ class _MedicationSearchResultScreenState
                     width: 60,
                     height: 60,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF174D4D).withOpacity(0.1),
+                      color: const Color(0xFF174D4D).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
@@ -515,7 +515,7 @@ class _MedicationSearchResultScreenState
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF174D4D).withOpacity(0.1),
+                      color: const Color(0xFF174D4D).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Text(
@@ -589,7 +589,7 @@ class _MedicationSearchResultScreenState
                         width: 80,
                         height: 80,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF174D4D).withOpacity(0.1),
+                          color: const Color(0xFF174D4D).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: const Icon(
@@ -757,13 +757,13 @@ class _MedicationSearchResultScreenState
             color:
                 isWarning
                     ? Colors.orange.shade50
-                    : const Color(0xFF174D4D).withOpacity(0.05),
+                    : const Color(0xFF174D4D).withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color:
                   isWarning
                       ? Colors.orange.shade200
-                      : const Color(0xFF174D4D).withOpacity(0.1),
+                      : const Color(0xFF174D4D).withValues(alpha: 0.1),
             ),
           ),
           child: Text(
@@ -790,7 +790,7 @@ class _MedicationSearchResultScreenState
         border: Border.all(color: Colors.green.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 4,
             offset: const Offset(0, 2),
@@ -814,7 +814,7 @@ class _MedicationSearchResultScreenState
                 border: Border.all(color: Colors.green.shade300, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.green.shade200.withOpacity(0.3),
+                    color: Colors.green.shade200.withValues(alpha: 0.3),
                     spreadRadius: 1,
                     blurRadius: 4,
                     offset: const Offset(0, 2),
@@ -930,7 +930,7 @@ class _MedicationSearchResultScreenState
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -940,7 +940,7 @@ class _MedicationSearchResultScreenState
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: color, size: 20),
@@ -984,7 +984,7 @@ class _MedicationSearchResultScreenState
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: color.withOpacity(0.7),
+                      color: color.withValues(alpha: 0.7),
                     ),
                   ),
                 ],
