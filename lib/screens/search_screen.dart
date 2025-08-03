@@ -971,10 +971,10 @@ class _SearchScreenState extends State<SearchScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF174D4D).withOpacity(0.1),
+                      color: const Color(0xFF174D4D).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: const Color(0xFF174D4D).withOpacity(0.2),
+                        color: const Color(0xFF174D4D).withValues(alpha: 0.2),
                       ),
                     ),
                     child: Column(
@@ -1151,7 +1151,7 @@ class _SearchScreenState extends State<SearchScreen> {
         border: Border.all(color: Colors.green.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 4,
             offset: const Offset(0, 2),
@@ -1175,7 +1175,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 border: Border.all(color: Colors.green.shade300, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.green.shade200.withOpacity(0.3),
+                    color: Colors.green.shade200.withValues(alpha: 0.3),
                     spreadRadius: 1,
                     blurRadius: 4,
                     offset: const Offset(0, 2),
@@ -1291,7 +1291,7 @@ class _SearchScreenState extends State<SearchScreen> {
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1301,7 +1301,7 @@ class _SearchScreenState extends State<SearchScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: color, size: 20),
@@ -1345,7 +1345,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: color.withOpacity(0.7),
+                      color: color.withValues(alpha: 0.7),
                     ),
                   ),
                 ],
