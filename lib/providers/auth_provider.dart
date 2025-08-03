@@ -224,7 +224,16 @@ class AuthProvider extends ChangeNotifier {
 
         notifyListeners();
       }
-    } catch (e) {}
+    } catch (e) {
+      // 로그 기록 (디버깅용)
+      print('사용자 정보 로드 중 오류 발생: $e');
+
+      // 에러 상태 설정
+      _error = '사용자 정보를 불러오는 중 오류가 발생했습니다.';
+
+      // 상태 업데이트 알림
+      notifyListeners();
+    }
   }
 
   void clearError() {
