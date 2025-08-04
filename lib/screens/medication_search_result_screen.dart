@@ -100,7 +100,7 @@ class _MedicationSearchResultScreenState
         _parsedMedications.add({
           'name': widget.searchQuery,
           'description':
-              result.length > 200 ? result.substring(0, 200) + '...' : result,
+              result.length > 200 ? '${result.substring(0, 200)}...' : result,
           'usage': '의사와 상담 후 복용하세요.',
           'sideEffects': '개인차가 있을 수 있습니다.',
           'precautions': '복용 전 의료진과 상담하세요.',
@@ -143,7 +143,7 @@ class _MedicationSearchResultScreenState
       _parsedMedications.add({
         'name': widget.searchQuery,
         'description':
-            result.length > 200 ? result.substring(0, 200) + '...' : result,
+            result.length > 200 ? '${result.substring(0, 200)}...' : result,
         'usage': '의사와 상담 후 복용하세요.',
         'sideEffects': '개인차가 있을 수 있습니다.',
         'precautions': '복용 전 의료진과 상담하세요.',
@@ -425,6 +425,360 @@ class _MedicationSearchResultScreenState
     );
   }
 
+  /*Widget _buildMedicationCard(Medication medication) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 4,
+      child: InkWell(
+        onTap: () => _showMedicationDetail(medication),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF174D4D).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.medication,
+                      size: 30,
+                      color: Color(0xFF174D4D),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          medication.name,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF174D4D),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        if (medication.genericName != null)
+                          Text(
+                            medication.genericName!,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        if (medication.genericName != null)
+                          const SizedBox(height: 4),
+                        if (medication.manufacturer != null)
+                          Text(
+                            medication.manufacturer!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: Color(0xFF174D4D),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                medication.description,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade700,
+                  height: 1.4,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF174D4D).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      '복용법',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF174D4D),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      medication.dosage,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showMedicationDetail(Medication medication) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildMedicationDetailSheet(medication),
+    );
+  }
+
+  Widget _buildMedicationDetailSheet(Medication medication) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.85,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        children: [
+          // 핸들 바
+          Container(
+            margin: const EdgeInsets.only(top: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 약 이름과 기본 정보
+                  Row(
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF174D4D).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.medication,
+                          size: 40,
+                          color: Color(0xFF174D4D),
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              medication.name,
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF174D4D),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            if (medication.genericName != null)
+                              Text(
+                                medication.genericName!,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            if (medication.genericName != null)
+                              const SizedBox(height: 4),
+                            if (medication.manufacturer != null)
+                              Text(
+                                medication.manufacturer!,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade500,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+
+                  // 설명
+                  _buildDetailSection(
+                    '약물 설명',
+                    medication.description,
+                    Icons.info_outline,
+                  ),
+                  const SizedBox(height: 24),
+
+                  // 적응증
+                  if (medication.indications != null)
+                    _buildDetailSection(
+                      '적응증',
+                      medication.indications!,
+                      Icons.healing,
+                    ),
+                  if (medication.indications != null)
+                    const SizedBox(height: 24),
+
+                  // 복용법
+                  _buildDetailSection('복용법', medication.dosage, Icons.schedule),
+                  const SizedBox(height: 24),
+
+                  // 주의사항
+                  if (medication.precautions != null)
+                    _buildDetailSection(
+                      '주의사항',
+                      medication.precautions!,
+                      Icons.warning_amber,
+                      isWarning: true,
+                    ),
+                  const SizedBox(height: 24),
+
+                  // 부작용
+                  _buildDetailSection(
+                    '부작용',
+                    medication.sideEffects.join(', '),
+                    Icons.error_outline,
+                    isWarning: true,
+                  ),
+                  const SizedBox(height: 32),
+
+                  // 하단 버튼
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // 약을 내 약통에 추가하는 기능 (추후 구현)
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('약이 내 약통에 추가되었습니다.'),
+                            backgroundColor: Color(0xFF174D4D),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF174D4D),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        '내 약통에 추가',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailSection(
+    String title,
+    String content,
+    IconData icon, {
+    bool isWarning = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color:
+                  isWarning ? Colors.orange.shade600 : const Color(0xFF174D4D),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color:
+                    isWarning
+                        ? Colors.orange.shade600
+                        : const Color(0xFF174D4D),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color:
+                isWarning
+                    ? Colors.orange.shade50
+                    : const Color(0xFF174D4D).withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color:
+                  isWarning
+                      ? Colors.orange.shade200
+                      : const Color(0xFF174D4D).withOpacity(0.1),
+            ),
+          ),
+          child: Text(
+            content,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade700,
+              height: 1.5,
+            ),
+          ),
+        ),
+      ],
+    );
+  }*/
+
   // 약 카드 위젯 (search_screen.dart와 동일한 디자인)
   Widget _buildEnhancedMedicationCard(Map<String, String> medication) {
     return Container(
@@ -436,7 +790,7 @@ class _MedicationSearchResultScreenState
         border: Border.all(color: Colors.green.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
+            color: Colors.grey.withOpacity(0.1),
             spreadRadius: 1,
             blurRadius: 4,
             offset: const Offset(0, 2),
@@ -460,7 +814,7 @@ class _MedicationSearchResultScreenState
                 border: Border.all(color: Colors.green.shade300, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.green.shade200.withValues(alpha: 0.3),
+                    color: Colors.green.shade200.withOpacity(0.3),
                     spreadRadius: 1,
                     blurRadius: 4,
                     offset: const Offset(0, 2),
@@ -576,7 +930,7 @@ class _MedicationSearchResultScreenState
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -586,7 +940,7 @@ class _MedicationSearchResultScreenState
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
+                  color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: color, size: 20),
@@ -630,7 +984,7 @@ class _MedicationSearchResultScreenState
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: color.withValues(alpha: 0.7),
+                      color: color.withOpacity(0.7),
                     ),
                   ),
                 ],

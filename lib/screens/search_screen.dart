@@ -911,7 +911,7 @@ class _SearchScreenState extends State<SearchScreen> {
       _parsedMedications.add({
         'name': '서버 응답',
         'description':
-            result.length > 200 ? result.substring(0, 200) + '...' : result,
+            result.length > 200 ? '${result.substring(0, 200)}...' : result,
         'usage': '의사와 상담 후 복용하세요.',
         'sideEffects': '개인차가 있을 수 있습니다.',
         'precautions': '복용 전 의료진과 상담하세요.',
@@ -971,10 +971,10 @@ class _SearchScreenState extends State<SearchScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF174D4D).withValues(alpha: 0.1),
+                      color: const Color(0xFF174D4D).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: const Color(0xFF174D4D).withValues(alpha: 0.2),
+                        color: const Color(0xFF174D4D).withOpacity(0.2),
                       ),
                     ),
                     child: Column(
@@ -1151,7 +1151,7 @@ class _SearchScreenState extends State<SearchScreen> {
         border: Border.all(color: Colors.green.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
+            color: Colors.grey.withOpacity(0.1),
             spreadRadius: 1,
             blurRadius: 4,
             offset: const Offset(0, 2),
@@ -1175,7 +1175,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 border: Border.all(color: Colors.green.shade300, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.green.shade200.withValues(alpha: 0.3),
+                    color: Colors.green.shade200.withOpacity(0.3),
                     spreadRadius: 1,
                     blurRadius: 4,
                     offset: const Offset(0, 2),
@@ -1289,21 +1289,9 @@ class _SearchScreenState extends State<SearchScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [backgroundColor, color.withValues(alpha: 0.1)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.2),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1313,10 +1301,10 @@ class _SearchScreenState extends State<SearchScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color,
+                  color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, color: Colors.white, size: 20),
+                child: Icon(icon, color: color, size: 20),
               ),
               const SizedBox(width: 12),
               Text(
@@ -1330,28 +1318,40 @@ class _SearchScreenState extends State<SearchScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            content,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.black87,
-              height: 1.6,
-              fontWeight: FontWeight.w500,
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  content,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade800,
+                    height: 1.5,
+                  ),
+                ),
+                if (content.contains('\n')) ...[
+                  const SizedBox(height: 8),
+                  Container(height: 1, color: Colors.grey.shade200),
+                  const SizedBox(height: 8),
+                  Text(
+                    '상세 정보',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: color.withOpacity(0.7),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-          if (content.contains('\n')) ...[
-            const SizedBox(height: 8),
-            Container(height: 1, color: color.withValues(alpha: 0.2)),
-            const SizedBox(height: 8),
-            Text(
-              '상세 정보',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: color.withValues(alpha: 0.7),
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -1872,6 +1872,75 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
+  /*// 임시 상호작용 결과 생성 (실제 API 연동 시 제거)
+  Map<String, dynamic> _generateMockInteractionResult(List<String> drugNames) {
+    // 약물 조합에 따른 임시 결과 생성
+    final hasAspirin = drugNames.any(
+      (drug) =>
+          drug.toLowerCase().contains('아스피린') ||
+          drug.toLowerCase().contains('aspirin'),
+    );
+    final hasWarfarin = drugNames.any(
+      (drug) =>
+          drug.toLowerCase().contains('와파린') ||
+          drug.toLowerCase().contains('warfarin'),
+    );
+    final hasIbuprofen = drugNames.any(
+      (drug) =>
+          drug.toLowerCase().contains('이부프로펜') ||
+          drug.toLowerCase().contains('ibuprofen'),
+    );
+
+    if (hasAspirin && hasWarfarin) {
+      return {
+        'isSafe': false,
+        'severity': 'high',
+        'interactions': [
+          {
+            'severity': 'high',
+            'description':
+                '아스피린과 와파린을 함께 복용하면 출혈 위험이 크게 증가합니다. 아스피린은 혈소판 기능을 억제하고, 와파린은 혈액 응고를 방해하여 심각한 출혈을 일으킬 수 있습니다.',
+            'drugs': ['아스피린', '와파린'],
+          },
+        ],
+        'recommendations': [
+          '아스피린과 와파린을 동시에 복용하지 마세요.',
+          '의사와 상담하여 대체 약물을 고려하세요.',
+          '출혈 증상이 나타나면 즉시 의료진에게 연락하세요.',
+        ],
+      };
+    } else if (hasAspirin && hasIbuprofen) {
+      return {
+        'isSafe': false,
+        'severity': 'moderate',
+        'interactions': [
+          {
+            'severity': 'moderate',
+            'description':
+                '아스피린과 이부프로펜을 함께 복용하면 위장장애 위험이 증가할 수 있습니다. 두 약물 모두 위장 점막을 자극할 수 있어 위염이나 위궤양을 악화시킬 수 있습니다.',
+            'drugs': ['아스피린', '이부프로펜'],
+          },
+        ],
+        'recommendations': [
+          '두 약물을 함께 복용할 때는 식사와 함께 복용하세요.',
+          '위장장애 증상이 나타나면 복용을 중단하고 의사와 상담하세요.',
+          '위장보호제와 함께 복용하는 것을 고려하세요.',
+        ],
+      };
+    } else {
+      return {
+        'isSafe': true,
+        'severity': 'none',
+        'interactions': [],
+        'recommendations': [
+          '검사한 약물들 간에 심각한 상호작용이 없습니다.',
+          '정해진 용법에 따라 복용하세요.',
+          '부작용이 나타나면 즉시 복용을 중단하고 의사와 상담하세요.',
+        ],
+      };
+    }
+  }*/
+
   // 여러 약물을 파싱하는 메서드
   void _parseMultipleMedications(String result) {
     print('🔍 여러 약물 파싱 시작');
@@ -1929,7 +1998,7 @@ class _SearchScreenState extends State<SearchScreen> {
         _parsedMedications.add({
           'name': '서버 추천 약물',
           'description':
-              result.length > 200 ? result.substring(0, 200) + '...' : result,
+              result.length > 200 ? '${result.substring(0, 200)}...' : result,
           'usage': '의사와 상담 후 복용하세요.',
           'sideEffects': '개인차가 있을 수 있습니다.',
           'precautions': '복용 전 의료진과 상담하세요.',
@@ -2029,18 +2098,10 @@ class _SearchScreenState extends State<SearchScreen> {
   String _extractMedicationName(String text) {
     // 다양한 패턴으로 약물명 추출 시도
     List<String> namePatterns = [
-      // 대괄호가 있는 경우 (서버 응답 형태)
-      r'약물명[:\s]*\[([^\]]+)\]',
-      r'약물\s*:\s*\[([^\]]+)\]',
-      r'제품명[:\s]*\[([^\]]+)\]',
-      // 대괄호가 없는 경우 (기존 형태)
       r'약물명[:\s]*([^\[\n\r]+?)(?=\s*(?:효능|작용|복용|용법|주의|부작용|\[|$))',
       r'약물\s*:\s*([^\[\n\r]+?)(?=\s*(?:효능|작용|복용|용법|주의|부작용|\[|$))',
       r'제품명[:\s]*([^\[\n\r]+?)(?=\s*(?:효능|작용|복용|용법|주의|부작용|\[|$))',
-      // 숫자로 시작하는 경우 (대괄호 포함)
-      r'^\d+\.\s*약물명[:\s]*\[([^\]]+)\]',
       r'^\d+\.\s*([^\[\n\r]+?)(?=\s*(?:효능|작용|복용|용법|주의|부작용|\[|$))',
-      // 일반적인 약물명 형식
       r'^([가-힣a-zA-Z0-9\s\-\(\)]+)(?=\s*(?:효능|작용|\[))',
     ];
 
