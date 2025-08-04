@@ -1289,9 +1289,21 @@ class _SearchScreenState extends State<SearchScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: backgroundColor,
+        gradient: LinearGradient(
+          colors: [backgroundColor, color.withValues(alpha: 0.1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.2),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1301,10 +1313,10 @@ class _SearchScreenState extends State<SearchScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
+                  color: color,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, color: color, size: 20),
+                child: Icon(icon, color: Colors.white, size: 20),
               ),
               const SizedBox(width: 12),
               Text(
@@ -1318,40 +1330,28 @@ class _SearchScreenState extends State<SearchScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  content,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade800,
-                    height: 1.5,
-                  ),
-                ),
-                if (content.contains('\n')) ...[
-                  const SizedBox(height: 8),
-                  Container(height: 1, color: Colors.grey.shade200),
-                  const SizedBox(height: 8),
-                  Text(
-                    '상세 정보',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: color.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
-              ],
+          Text(
+            content,
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.black87,
+              height: 1.6,
+              fontWeight: FontWeight.w500,
             ),
           ),
+          if (content.contains('\n')) ...[
+            const SizedBox(height: 8),
+            Container(height: 1, color: color.withValues(alpha: 0.2)),
+            const SizedBox(height: 8),
+            Text(
+              '상세 정보',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: color.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
         ],
       ),
     );
