@@ -1245,8 +1245,8 @@ class _SearchScreenState extends State<SearchScreen> {
               medication['usage']?.isNotEmpty == true
                   ? medication['usage']!
                   : '복용법 정보가 없습니다.',
-              Colors.orange.shade700,
-              Colors.orange.shade50,
+              Colors.amber.shade700,
+              Colors.amber.shade50,
             ),
             const SizedBox(height: 16),
 
@@ -1257,8 +1257,8 @@ class _SearchScreenState extends State<SearchScreen> {
               medication['precautions']?.isNotEmpty == true
                   ? medication['precautions']!
                   : '주의사항 정보가 없습니다.',
-              Colors.amber.shade700,
-              Colors.amber.shade50,
+              Colors.orange.shade700,
+              Colors.orange.shade50,
             ),
             const SizedBox(height: 16),
 
