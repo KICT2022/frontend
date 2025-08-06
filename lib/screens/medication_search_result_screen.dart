@@ -487,16 +487,16 @@ class _MedicationSearchResultScreenState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '약물명',
+                          '약품명',
                           style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                             color: Colors.green.shade600,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          medication['name'] ?? '약물명',
+                          medication['name'] ?? '약품명',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -642,11 +642,12 @@ class _MedicationSearchResultScreenState
     );
   }
 
-  // 내용에서 라벨을 제거하는 헬퍼 메서드
+  // 내용에서 라벨과 의미없는 기호를 제거하는 헬퍼 메서드
   String _cleanContentFromLabels(String content) {
     // 일반적인 라벨 패턴들 제거
     final patterns = [
       '약물명:',
+      '약품명:',
       '효능/작용:',
       '효능:',
       '작용:',
@@ -663,12 +664,34 @@ class _MedicationSearchResultScreenState
     ];
 
     String cleaned = content;
+
+    // 라벨 제거
     for (String pattern in patterns) {
       if (cleaned.startsWith(pattern)) {
         cleaned = cleaned.substring(pattern.length).trim();
         break;
       }
     }
+
+    // 의미없는 기호들 제거
+    cleaned =
+        cleaned
+            .replaceAll(RegExp(r'^\*+\s*'), '') // 시작 부분의 * 기호들
+            .replaceAll(RegExp(r'^\-+\s*'), '') // 시작 부분의 - 기호들
+            .replaceAll(RegExp(r'^:+\s*'), '') // 시작 부분의 : 기호들
+            .replaceAll(RegExp(r'\*+\s*$'), '') // 끝 부분의 * 기호들
+            .replaceAll(RegExp(r'\-+\s*$'), '') // 끝 부분의 - 기호들
+            .replaceAll(RegExp(r':+\s*$'), '') // 끝 부분의 : 기호들
+            .replaceAll(RegExp(r'\*+'), '') // 중간의 * 기호들
+            .replaceAll(RegExp(r'\s*-\s*'), ' ') // 중간의 - 기호들을 공백으로
+            .replaceAll(RegExp(r'\s+'), ' ') // 여러 공백을 하나로
+            .trim();
+
+    // 빈 문자열이나 기호만 있는 경우 처리
+    if (cleaned.isEmpty || RegExp(r'^[\*\-:]+$').hasMatch(cleaned)) {
+      return '';
+    }
+
     return cleaned;
   }
 

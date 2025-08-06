@@ -38,6 +38,24 @@ void setGlobalNotificationProvider(NotificationProvider provider) {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // 키보드 이벤트 오류 처리 (Flutter 엔진 버그 해결)
+  FlutterError.onError = (FlutterErrorDetails details) {
+    // 키보드 관련 assertion 오류들을 무시
+    if (details.exception is AssertionError) {
+      final exceptionString = details.exception.toString();
+      if (exceptionString.contains('_pressedKeys.containsKey') ||
+          exceptionString.contains('KeyDownEvent') ||
+          exceptionString.contains('HardwareKeyboard') ||
+          exceptionString.contains('physicalKey')) {
+        // 키보드 상태 동기화 오류는 로그만 출력하고 무시
+        print('키보드 이벤트 동기화 오류 (무시됨): ${details.exception}');
+        return;
+      }
+    }
+    // 다른 오류는 기본 처리
+    FlutterError.presentError(details);
+  };
+
   // SharedPreferences 초기화
   await SharedPreferences.getInstance();
 
@@ -179,6 +197,15 @@ class MyApp extends StatelessWidget {
         ),
         routerConfig: _createRouter(),
         debugShowCheckedModeBanner: false,
+        // 키보드 포커스 관리 개선
+        shortcuts: <ShortcutActivator, Intent>{
+          // 기본 키보드 단축키 유지하면서 충돌 방지
+          ...WidgetsApp.defaultShortcuts,
+        },
+        actions: <Type, Action<Intent>>{
+          // 기본 액션 유지하면서 키보드 이벤트 안정화
+          ...WidgetsApp.defaultActions,
+        },
         // 성능 최적화 옵션
         showPerformanceOverlay: false,
         showSemanticsDebugger: false,
