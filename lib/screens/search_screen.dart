@@ -911,7 +911,7 @@ class _SearchScreenState extends State<SearchScreen> {
       _parsedMedications.add({
         'name': '서버 응답',
         'description':
-            result.length > 200 ? result.substring(0, 200) + '...' : result,
+            result.length > 200 ? '${result.substring(0, 200)}...' : result,
         'usage': '의사와 상담 후 복용하세요.',
         'sideEffects': '개인차가 있을 수 있습니다.',
         'precautions': '복용 전 의료진과 상담하세요.',
@@ -1929,7 +1929,7 @@ class _SearchScreenState extends State<SearchScreen> {
         _parsedMedications.add({
           'name': '서버 추천 약물',
           'description':
-              result.length > 200 ? result.substring(0, 200) + '...' : result,
+              result.length > 200 ? '${result.substring(0, 200)}...' : result,
           'usage': '의사와 상담 후 복용하세요.',
           'sideEffects': '개인차가 있을 수 있습니다.',
           'precautions': '복용 전 의료진과 상담하세요.',
